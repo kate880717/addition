@@ -1,742 +1,1209 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>순서대로 말해요</title>
-  
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      safelist: [
-        'flex','flex-row','flex-col','flex-1','flex-shrink-0',
-        'flex-wrap','items-center','justify-center','justify-between','justify-around',
-        'gap-2','gap-3','gap-4','gap-5','gap-6','gap-7','gap-8',
-        'content-start','overflow-hidden'
-      ]
-    }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
-  <!-- 모바일 드래그앤드롭 폴리필 -->
-  <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-rc.0/index.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@3.0.0-rc.0/default.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>모으기와 가르기 — 모음이와 나눔이</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --intro-bg-1:#FFF6D6;--intro-bg-2:#FFE9A8;--intro-accent:#FFC23C;--intro-text:#6B4A00;
+  --gather-bg-1:#E8F8E0;--gather-bg-2:#C6EBA7;--gather-accent:#5BB836;--gather-deep:#2F7A12;
+  --split-bg-1:#FFE8F1;--split-bg-2:#FFC1D9;--split-accent:#FF6FA8;--split-deep:#C73874;
+  --merge-bg-1:#DCEEFF;--merge-bg-2:#A8D2FF;--merge-accent:#3A8DDE;
+  --card-bg:#fff;--card-shadow:0 8px 20px rgba(0,0,0,.10),0 2px 6px rgba(0,0,0,.06);
+  --radius:22px;--radius-sm:14px;
+  --font-display:'Jua',system-ui,sans-serif;
+  --font-body:'Nanum Gothic',system-ui,sans-serif;
+  --correct:#2EBD6B;--wrong:#F25C5C;--highlight:#FFE600;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-body);font-weight:700;user-select:none}
+body{background:linear-gradient(180deg,#FFF8DD,#FFE9A8);color:#333}
+#app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;width:1280px;height:800px;transform-origin:center center;overflow:hidden}
+.topbar{position:absolute;top:0;left:0;right:0;height:64px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:3px solid rgba(0,0,0,.06);display:flex;align-items:center;padding:0 20px;z-index:100;gap:16px}
+.topbar .home-btn{width:44px;height:44px;border-radius:12px;background:var(--intro-accent);border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.topbar .home-btn:hover{transform:scale(1.08)}
+.topbar .title{font-family:var(--font-display);font-size:22px;color:#333;flex:1}
+.topbar .progress{height:40px;width:220px;background:#E5E7EB;border-radius:20px;overflow:hidden;position:relative}
+.topbar .progress-fill{height:100%;background:linear-gradient(90deg,#5BB836,#2F7A12);border-radius:20px;width:0%;transition:width .5s}
+.topbar .progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:18px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.topbar .toggle-btn{width:44px;height:44px;border-radius:12px;border:2px solid #E5E7EB;background:#fff;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.topbar .toggle-btn:hover{transform:scale(1.08)}
+.topbar .toggle-btn.active{background:var(--intro-accent);border-color:var(--intro-accent)}
+.screen{position:absolute;top:64px;left:0;right:0;bottom:0;opacity:0;pointer-events:none;transition:opacity .4s;display:flex;flex-direction:column;overflow:hidden}
+.screen.active{opacity:1;pointer-events:auto}
+.theme-intro{background:radial-gradient(ellipse at 20% 30%,rgba(255,255,255,.6) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(255,194,60,.4) 0%,transparent 50%),linear-gradient(180deg,var(--intro-bg-1),var(--intro-bg-2))}
+.theme-gather{background:radial-gradient(ellipse at 15% 20%,rgba(255,255,255,.5) 0%,transparent 50%),radial-gradient(ellipse at 85% 80%,rgba(91,184,54,.3) 0%,transparent 50%),linear-gradient(180deg,var(--gather-bg-1),var(--gather-bg-2))}
+.theme-split{background:radial-gradient(ellipse at 15% 20%,rgba(255,255,255,.5) 0%,transparent 50%),radial-gradient(ellipse at 85% 80%,rgba(255,111,168,.3) 0%,transparent 50%),linear-gradient(180deg,var(--split-bg-1),var(--split-bg-2))}
+.theme-merge{background:radial-gradient(ellipse at 15% 20%,rgba(255,255,255,.5) 0%,transparent 50%),radial-gradient(ellipse at 85% 80%,rgba(58,141,222,.3) 0%,transparent 50%),linear-gradient(180deg,var(--merge-bg-1),var(--merge-bg-2))}
+.instruction{margin:18px auto 8px;padding:14px 28px;background:#fff;border-radius:999px;box-shadow:var(--card-shadow);font-family:var(--font-display);font-size:32px;color:#333;max-width:80%;text-align:center;animation:pop .6s cubic-bezier(.34,1.56,.64,1);position:relative;z-index:5}
+@keyframes pop{0%{transform:translateY(-30px) scale(.85);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+.instruction .emph{color:var(--gather-deep);font-size:38px}
+.theme-split .instruction .emph{color:var(--split-deep)}
+.theme-merge .instruction .emph{color:var(--merge-accent)}
 
-  <style>
-    * { box-sizing: border-box; scrollbar-width: none; }
-    *::-webkit-scrollbar { display: none; }
-    html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      overflow: hidden;
-      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-      user-select: none; -webkit-user-select: none;
-      background: #f0fdf4;
-    }
-    #root { width: 100%; height: 100%; overflow: hidden; }
-    .word-keep { word-break: keep-all; }
+/* TTS 글자 단위 하이라이트 */
+.tts-char{display:inline-block;transition:all .1s}
+.tts-char.active{background:var(--highlight);color:#111;padding:0 2px;border-radius:6px;transform:scale(1.08)}
 
-    /* 레이아웃 보조 클래스 - Tailwind CDN 누락 방지 */
-    .row { display: flex !important; flex-direction: row !important; }
-    .col { display: flex !important; flex-direction: column !important; }
-    .f1 { flex: 1 !important; }
-    .fshrink0 { flex-shrink: 0 !important; }
-    .screen-wrap { height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 16px; }
+/* 튜토리얼 (버튼 바로 근처) */
+.tutorial-hint{font-family:var(--font-display);font-size:18px;color:#666;background:#FFF8DD;padding:6px 16px;border-radius:999px;display:inline-flex;gap:6px;align-items:center;margin-top:6px;animation:pop .5s}
 
-    /* 슬롯(빈칸) 스타일 */
-    .slot-box {
-      background: #f8fafc;
-      border: 3px dashed #cbd5e1;
-      border-radius: 1rem;
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-      padding: 8px 12px;
-      margin-bottom: 6px;
-      transition: background 0.2s, border-color 0.2s;
-    }
-    .slot-box.drag-over {
-      background: #dcfce7;
-      border-color: #22c55e;
-    }
+.big-btn{font-family:var(--font-display);font-size:30px;padding:16px 42px;border:none;border-radius:999px;background:linear-gradient(180deg,#FFC23C,#FF9C00);color:#fff;box-shadow:0 6px 0 #C77800,0 12px 24px rgba(0,0,0,.15);cursor:pointer;transition:all .12s;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.big-btn:hover{transform:translateY(-2px)}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #C77800,0 4px 8px rgba(0,0,0,.1)}
+.big-btn.green{background:linear-gradient(180deg,#6DD840,#2F9F0E);box-shadow:0 6px 0 #1F6E08,0 12px 24px rgba(0,0,0,.15)}
+.big-btn.pink{background:linear-gradient(180deg,#FF87BA,#E04A88);box-shadow:0 6px 0 #9E2F5E,0 12px 24px rgba(0,0,0,.15)}
+.big-btn.blue{background:linear-gradient(180deg,#5BB0FF,#2274D6);box-shadow:0 6px 0 #15528F,0 12px 24px rgba(0,0,0,.15)}
+.big-btn.gray{background:linear-gradient(180deg,#C0C7D0,#94A3B8);box-shadow:0 6px 0 #4B5563,0 12px 24px rgba(0,0,0,.15)}
+.big-btn.small{font-size:22px;padding:12px 26px;box-shadow:0 4px 0 rgba(0,0,0,.2),0 6px 12px rgba(0,0,0,.1)}
+.big-btn:disabled{opacity:.4;cursor:not-allowed}
+.skip-btn{background:rgba(255,255,255,.7);border:2px solid rgba(0,0,0,.1);padding:10px 24px;border-radius:999px;font-family:var(--font-display);font-size:18px;color:#666;cursor:pointer}
+.skip-btn:hover{background:#fff}
 
-    /* 드래그 카드 스타일 */
-    .drag-card {
-      background: #fff;
-      border-radius: 0.875rem;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-      border: 2px solid #e2e8f0;
-      cursor: grab;
-      touch-action: none;
-      width: 100%;
-    }
-    .drag-card:active { cursor: grabbing; box-shadow: 0 6px 16px rgba(0,0,0,0.15); border-color: #22c55e; }
-  </style>
+.mic-gate{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;text-align:center}
+.mic-gate .big-mic{font-size:120px;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+.setup-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:30px}
+.setup-card{background:#fff;border-radius:var(--radius);padding:36px 60px;box-shadow:var(--card-shadow);max-width:760px;width:100%}
+.setup-card h2{font-family:var(--font-display);font-size:36px;color:var(--intro-text);margin-bottom:20px;text-align:center}
+.setup-row{margin:16px 0}
+.setup-row label{font-family:var(--font-display);font-size:24px;color:#444;display:block;margin-bottom:8px}
+.setup-row select{width:100%;padding:14px 18px;font-family:var(--font-display);font-size:24px;border:3px solid #FFC23C;border-radius:14px;background:#FFFEF0;cursor:pointer;outline:none}
+.choice-row{display:flex;gap:14px;justify-content:center;margin-top:10px}
+.choice-row button{flex:1;font-family:var(--font-display);font-size:28px;padding:18px 0;border:4px solid #DDD;border-radius:18px;background:#fff;cursor:pointer;transition:all .15s}
+.choice-row button:hover{border-color:var(--gather-accent);transform:translateY(-2px)}
+.choice-row button.selected{background:linear-gradient(180deg,#9CE970,var(--gather-accent));color:#fff;border-color:var(--gather-deep);box-shadow:0 4px 0 var(--gather-deep)}
+
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px}
+.app-title{font-family:var(--font-display);font-size:86px;color:var(--intro-text);text-align:center;line-height:1;text-shadow:4px 4px 0 rgba(255,255,255,.7);animation:bounce 1.2s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bounce{0%{transform:translateY(-50px) scale(.7);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+.subtitle{font-family:var(--font-display);font-size:28px;color:#8a6800;opacity:.85}
+.mascots{display:flex;gap:80px;margin:8px 0}
+.mascot-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mascot-name{font-family:var(--font-display);font-size:22px;padding:6px 18px;border-radius:999px;color:#fff}
+.mascot-name.m{background:var(--gather-deep)}
+.mascot-name.n{background:var(--split-deep)}
+
+/* 오늘의 목표 — 백워드 설계 */
+.goals-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px}
+.goals-title{font-family:var(--font-display);font-size:44px;color:var(--intro-text);background:#fff;padding:14px 50px;border-radius:999px;box-shadow:var(--card-shadow);display:flex;align-items:center;gap:12px}
+.goal-list{background:#FFFBE5;border:4px dashed var(--intro-accent);border-radius:var(--radius);padding:24px 36px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--card-shadow);max-width:840px}
+.goal-item{font-family:var(--font-display);font-size:28px;color:#4a3500;display:flex;align-items:center;gap:14px;opacity:0;animation:goal-in .6s forwards}
+.goal-item:nth-child(1){animation-delay:.2s}.goal-item:nth-child(2){animation-delay:.5s}.goal-item:nth-child(3){animation-delay:.8s}
+@keyframes goal-in{0%{transform:translateX(-30px);opacity:0}100%{transform:translateX(0);opacity:1}}
+.goal-icon{width:44px;height:44px;background:var(--intro-accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+
+/* 탐구질문 팝업 */
+.inquiry-modal{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;animation:fade-in .3s}
+@keyframes fade-in{0%{opacity:0}100%{opacity:1}}
+.inquiry-card{background:#fff;border-radius:var(--radius);padding:30px 40px;max-width:680px;box-shadow:0 16px 40px rgba(0,0,0,.3);animation:pop .5s cubic-bezier(.34,1.56,.64,1);text-align:center}
+.inquiry-card .icon{font-size:60px}
+.inquiry-card h2{font-family:var(--font-display);font-size:32px;color:var(--intro-text);margin:8px 0}
+.inquiry-card .answer-box{background:#FFFBE5;border:3px dashed var(--intro-accent);border-radius:16px;padding:16px;font-family:var(--font-display);font-size:22px;color:#4a3500;margin:14px 0;line-height:1.5;text-align:left}
+
+/* 녹음 */
+.record-wrap{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px 20px 16px;gap:10px;overflow:hidden}
+.record-meaning{background:#fff;border-radius:var(--radius);padding:12px 26px;box-shadow:var(--card-shadow);font-family:var(--font-display);font-size:22px;text-align:center;max-width:880px}
+.record-meaning.pre{border:4px solid #93C5FD;color:#1E40AF}
+.record-meaning.post{border:4px solid #6EE7B7;color:#065F46}
+.record-meaning .small{font-size:16px;color:#666;display:block;margin-top:2px}
+
+.record-main{display:flex;gap:20px;align-items:flex-start;justify-content:center;width:100%;max-width:1080px}
+.record-btn-col{display:flex;flex-direction:column;align-items:center;gap:6px;width:190px;flex-shrink:0}
+.record-btn{width:120px;height:120px;border-radius:50%;background:linear-gradient(180deg,#FF6464,#D03030);border:6px solid #fff;box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 6px rgba(255,100,100,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.record-btn:hover{transform:scale(1.05)}
+.record-btn.recording{animation:pulse-rec 1.2s infinite}
+@keyframes pulse-rec{0%,100%{box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 6px rgba(255,100,100,.3)}50%{box-shadow:0 8px 24px rgba(0,0,0,.2),0 0 0 16px rgba(255,100,100,.5)}}
+.record-btn .dot{width:46px;height:46px;background:#fff;border-radius:50%;transition:all .2s}
+.record-btn.recording .dot{width:36px;height:36px;border-radius:8px}
+
+.record-text-area{flex:1;background:#fff;border-radius:18px;padding:12px 16px;box-shadow:var(--card-shadow);border:3px solid #E5E7EB;display:flex;flex-direction:column;gap:6px;min-width:0}
+.record-text-area textarea{width:100%;min-height:90px;border:2px solid #DDD;border-radius:10px;padding:10px;font-family:var(--font-body);font-size:22px;color:#333;resize:none;outline:none}
+.record-text-area textarea:focus{border-color:var(--gather-accent)}
+.stt-status{font-family:var(--font-display);font-size:16px;color:#888;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.stt-interim{font-family:var(--font-body);font-size:18px;color:#aaa;min-height:22px;font-style:italic}
+
+.record-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.help-panel{background:#FEF3C7;border:3px solid #F59E0B;border-radius:14px;padding:12px 18px;font-family:var(--font-display);font-size:20px;color:#92400E;max-width:880px;animation:pop .4s}
+.help-panel .examples{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.help-panel .ex-item{background:#fff;padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:18px}
+.help-panel .ex-item:hover{background:#FFFEF0}
+
+/* 자기평가 + 스티커 */
+.self-eval{background:#fff;border-radius:var(--radius);padding:14px 30px;box-shadow:var(--card-shadow);text-align:center;animation:pop .5s;margin-top:6px}
+.self-eval h3{font-family:var(--font-display);font-size:24px;color:#444;margin-bottom:8px}
+.star-row{display:flex;gap:8px;justify-content:center;font-size:50px;margin:4px 0}
+.star{cursor:pointer;color:#DDD;transition:all .2s;filter:grayscale(1)}
+.star.filled{color:#FFC23C;filter:grayscale(0);transform:scale(1.1);animation:star-pop .3s}
+@keyframes star-pop{0%{transform:scale(.8) rotate(-20deg)}100%{transform:scale(1.1) rotate(0)}}
+.sticker-box{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--card-shadow);text-align:center}
+.sticker-box h3{font-family:var(--font-display);font-size:24px;color:#444;margin-bottom:10px}
+.sticker-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.sticker-btn{font-size:48px;cursor:pointer;padding:8px;background:#F9FAFB;border:4px solid #E5E7EB;border-radius:14px;transition:all .2s}
+.sticker-btn:hover{transform:scale(1.1) rotate(-5deg);background:#FEF3C7}
+.sticker-btn.picked{background:#FEF3C7;border-color:#F59E0B;animation:wiggle .4s}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg) scale(1.15)}75%{transform:rotate(10deg) scale(1.15)}}
+
+/* 활동 영역 */
+.activity{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 30px 20px;gap:12px;overflow:hidden}
+.activity-canvas{flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;gap:24px}
+.num-tile{width:110px;height:110px;border-radius:var(--radius-sm);background:linear-gradient(180deg,#F2D7A8,#D9A86A);border:4px solid #B5854A;box-shadow:0 4px 0 #8C5F2D,0 8px 16px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:60px;color:#4A2C0E;transition:all .18s}
+.num-tile.empty{background:#FFFCEF;border:4px dashed #C0A475;box-shadow:none;color:transparent}
+.num-tile.target{background:linear-gradient(180deg,#FFEC9E,#FFC23C);border-color:#B58200;font-size:68px}
+.num-tile.correct-fill{animation:tile-correct .5s ease-out}
+@keyframes tile-correct{0%{transform:scale(.5);background:linear-gradient(180deg,#9CE970,var(--correct))}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.num-tile.shake{animation:shake-x .4s}
+@keyframes shake-x{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.objects-box{background:#fff;border:5px solid var(--gather-deep);border-radius:var(--radius);padding:18px;min-width:240px;min-height:160px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;box-shadow:var(--card-shadow);position:relative}
+.theme-split .objects-box{border-color:var(--split-deep)}
+.objects-box .obj{animation:obj-pop .4s cubic-bezier(.34,1.56,.64,1) backwards}
+@keyframes obj-pop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.choices{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.choice-btn{min-width:100px;padding:18px 26px;background:#fff;border:4px solid #DDD;border-radius:var(--radius-sm);font-family:var(--font-display);font-size:44px;color:#333;cursor:pointer;box-shadow:0 4px 0 #BBB,0 8px 16px rgba(0,0,0,.1);transition:all .15s}
+.choice-btn:hover{transform:translateY(-3px);border-color:var(--gather-accent)}
+.choice-btn:active{transform:translateY(2px)}
+.choice-btn.correct{background:linear-gradient(180deg,#9CE970,var(--correct));border-color:var(--correct);color:#fff;animation:tile-correct .5s}
+.choice-btn.wrong{background:#FFD3D3;border-color:var(--wrong);color:var(--wrong);animation:shake-x .4s}
+
+/* 분지 트리 */
+.branch-tree{position:relative;display:flex;flex-direction:column;align-items:center;gap:30px;padding:10px}
+.branch-tree .tree-svg{position:absolute;inset:0;pointer-events:none;z-index:1}
+.branch-tree .row{display:flex;gap:100px;z-index:2;position:relative}
+.branch-tree .slot,.branch-tree .anchor{width:110px;height:110px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:60px}
+.branch-tree .anchor{background:linear-gradient(180deg,#FFEC9E,#FFC23C);border:4px solid #B58200;box-shadow:0 4px 0 #8C5F2D,0 8px 16px rgba(0,0,0,.15);color:#4A2C0E}
+.branch-tree .slot.empty{background:#FFFCEF;border:4px dashed #C0A475;color:#C0A475;cursor:pointer;transition:all .18s}
+.branch-tree .slot.empty:hover{background:#FFF3D8;transform:scale(1.04)}
+.branch-tree .slot.empty.active{border-color:var(--highlight);background:#FFFEE6;box-shadow:0 0 0 6px rgba(255,230,0,.4);animation:slot-pulse 1.2s infinite}
+@keyframes slot-pulse{0%,100%{box-shadow:0 0 0 6px rgba(255,230,0,.4)}50%{box-shadow:0 0 0 14px rgba(255,230,0,.2)}}
+.branch-tree .slot.filled{background:linear-gradient(180deg,#FFEC9E,#FFC23C);border:4px solid #B58200;color:#4A2C0E;box-shadow:0 4px 0 #8C5F2D,0 8px 16px rgba(0,0,0,.15);animation:tile-correct .5s}
+.option-panel{display:flex;flex-wrap:wrap;gap:12px;padding:16px;background:rgba(255,255,255,.6);border-radius:var(--radius);border:3px dashed rgba(0,0,0,.1);max-width:330px;justify-content:center}
+.option-panel .opt-card{width:80px;height:80px;border-radius:var(--radius-sm);background:linear-gradient(180deg,#F2D7A8,#D9A86A);border:4px solid #B5854A;box-shadow:0 4px 0 #8C5F2D,0 6px 14px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:46px;color:#4A2C0E;cursor:pointer;transition:all .15s;user-select:none}
+.option-panel .opt-card:hover{transform:translateY(-4px) scale(1.05)}
+.option-panel .opt-card.active{border-color:var(--highlight);background:linear-gradient(180deg,#FFEC9E,#FFC23C);box-shadow:0 0 0 5px rgba(255,230,0,.5),0 4px 0 #8C5F2D;transform:translateY(-6px) scale(1.08)}
+.option-panel .opt-card.used{visibility:hidden}
+
+.mascot-corner{position:absolute;bottom:14px;left:18px;width:120px;z-index:10;pointer-events:none;animation:bob 3s ease-in-out infinite}
+.mascot-corner.right{left:auto;right:18px}
+.speech{position:absolute;bottom:110px;left:150px;background:#fff;border:3px solid #333;border-radius:18px;padding:8px 16px;font-family:var(--font-display);font-size:20px;box-shadow:var(--card-shadow);max-width:320px;z-index:11}
+.speech::before{content:'';position:absolute;bottom:16px;left:-14px;border:9px solid transparent;border-right-color:#333}
+.speech::after{content:'';position:absolute;bottom:17px;left:-10px;border:8px solid transparent;border-right-color:#fff}
+
+.feedback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:200}
+.feedback-card{background:#fff;border-radius:var(--radius);padding:22px 38px;box-shadow:0 16px 40px rgba(0,0,0,.2);font-family:var(--font-display);font-size:32px;text-align:center;border:6px solid var(--correct);color:var(--correct);opacity:0;transform:scale(.5)}
+.feedback-card.wrong{border-color:var(--wrong);color:var(--wrong)}
+.feedback.show .feedback-card{animation:fb-pop .5s forwards}
+@keyframes fb-pop{0%{opacity:0;transform:scale(.3) rotate(-10deg)}60%{opacity:1;transform:scale(1.15) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+.confetti{position:absolute;inset:0;pointer-events:none;z-index:150;overflow:hidden}
+.confetti-piece{position:absolute;width:14px;height:14px;animation:confetti-fall 1.6s ease-out forwards}
+@keyframes confetti-fall{0%{transform:translateY(-20vh) rotate(0deg);opacity:1}100%{transform:translateY(90vh) rotate(720deg);opacity:0}}
+
+.cert-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:14px}
+.cert-card{width:920px;background:radial-gradient(circle at 20% 30%,rgba(255,194,60,.25),transparent 60%),radial-gradient(circle at 80% 70%,rgba(255,111,168,.25),transparent 60%),linear-gradient(180deg,#FFFEF0,#FFF6D6);border:10px double var(--intro-accent);border-radius:28px;box-shadow:0 16px 40px rgba(0,0,0,.18);padding:20px 28px;animation:cert-in 1s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cert-in{0%{transform:translateY(40px) rotate(-2deg);opacity:0}100%{transform:translateY(0) rotate(0);opacity:1}}
+.cert-card h1{font-family:var(--font-display);font-size:42px;color:var(--intro-text);text-align:center;text-shadow:3px 3px 0 rgba(255,255,255,.7)}
+.cert-name{font-family:var(--font-display);font-size:28px;color:var(--gather-deep);background:#fff;padding:6px 24px;border-radius:999px;border:3px dashed var(--gather-accent);margin:4px auto;display:inline-block}
+.cert-compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}
+.cert-box{background:#fff;border-radius:14px;padding:12px 16px;min-height:100px}
+.cert-box.pre{border:4px solid #93C5FD}
+.cert-box.post{border:4px solid #6EE7B7}
+.cert-box h3{font-family:var(--font-display);font-size:20px;margin-bottom:4px}
+.cert-box.pre h3{color:#1E40AF}
+.cert-box.post h3{color:#065F46}
+.cert-box p{font-family:var(--font-body);font-size:18px;color:#333;line-height:1.4}
+
+/* 대시보드 */
+.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:8px 0;border-top:2px dashed #FFC23C;margin-top:6px}
+.dash-card{background:#fff;border-radius:14px;padding:10px;text-align:center;border:2px solid #F0E6C8}
+.dash-card .num{font-family:var(--font-display);font-size:30px;color:var(--gather-deep)}
+.dash-card .label{font-family:var(--font-display);font-size:14px;color:#666}
+.cert-buttons{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.hidden{display:none !important}
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="app">
+  <div id="stage">
+    <div class="topbar">
+      <button class="home-btn" onclick="goHome()" title="처음으로">🏠</button>
+      <div class="title">모으기와 가르기 — 모음이와 나눔이</div>
+      <div class="progress"><div class="progress-fill" id="progress-fill"></div><div class="progress-label" id="progress-label">준비</div></div>
+      <button class="toggle-btn" id="speaker-btn" onclick="toggleSpeaker()" title="소리 켜기/끄기">🔇</button>
+    </div>
+    <div id="screens"></div>
+    <div class="feedback" id="feedback"><div class="feedback-card" id="feedback-card">잘했어요!</div></div>
+    <div class="confetti hidden" id="confetti"></div>
+    <div id="inquiry-mount"></div>
+  </div>
+</div>
 
-  <script type="text/babel">
-    window.onload = function() {
-      MobileDragDrop.polyfill({
-        dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
-      });
-      window.addEventListener('touchmove', function() {}, {passive: false});
-    };
+<script>
+// ============================================
+// ⚙️ 0. GAS_URL — Apps Script 웹앱 주소 (배포 후 입력)
+// ============================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyLhxVI3gsuTlBzQyIT2LxNBtVPUvQKT2C_ywleSZ3pKdJWMOG3gsRzRUfxk8etF79D/exec';
 
-    // ★ 구글 앱스 스크립트 배포 후 URL을 이곳에 넣으세요.
-    window.GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxjTrd4Rv7Fi3NLbl0Fn5sDtbFlg5XA_7pRzUCn3qoZ7TTm9uYeIYXCaUJiIQRdtrkS/exec';
+const FALLBACK_STUDENTS = [
+  {no:1,name:'김모음',clazz:'1-1'},{no:2,name:'이나눔',clazz:'1-1'},
+  {no:3,name:'박세모',clazz:'1-1'},{no:4,name:'최둥글',clazz:'1-1'},{no:5,name:'한씩씩',clazz:'1-1'}
+];
+const FALLBACK_QUESTIONS = [
+  {stage:'gather-same',kind:'truck',a:3,b:3,target:6,meta:''},
+  {stage:'gather-same',kind:'apple',a:2,b:2,target:4,meta:''},
+  {stage:'gather-same',kind:'flower',a:4,b:4,target:8,meta:''},
+  {stage:'gather-mixed',kind:'apple',a:2,b:3,target:5,meta:''},
+  {stage:'gather-mixed',kind:'truck',a:1,b:4,target:5,meta:''},
+  {stage:'gather-mixed',kind:'flower',a:3,b:5,target:8,meta:''},
+  {stage:'gather-card',kind:'',a:2,b:4,target:6,meta:''},
+  {stage:'gather-card',kind:'',a:3,b:4,target:7,meta:''},
+  {stage:'gather-card',kind:'',a:1,b:6,target:7,meta:''},
+  {stage:'gather-card',kind:'',a:5,b:3,target:8,meta:''},
+  {stage:'gather-many',kind:'',a:0,b:0,target:6,meta:''},
+  {stage:'gather-many',kind:'',a:0,b:0,target:8,meta:''},
+  {stage:'gather-many',kind:'',a:0,b:0,target:5,meta:''},
+  {stage:'split-equal',kind:'bear',a:0,b:0,target:6,meta:''},
+  {stage:'split-equal',kind:'apple',a:0,b:0,target:4,meta:''},
+  {stage:'split-equal',kind:'flower',a:0,b:0,target:8,meta:''},
+  {stage:'split-card',kind:'',a:2,b:0,target:7,meta:''},
+  {stage:'split-card',kind:'',a:3,b:0,target:5,meta:''},
+  {stage:'split-card',kind:'',a:5,b:0,target:8,meta:''},
+  {stage:'split-card',kind:'',a:4,b:0,target:9,meta:''},
+  {stage:'split-many',kind:'',a:0,b:0,target:6,meta:''},
+  {stage:'split-many',kind:'',a:0,b:0,target:7,meta:''},
+  {stage:'split-many',kind:'',a:0,b:0,target:8,meta:''},
+];
 
-    /*
-      이모지 중복 수정:
-        Q1: 올챙이 🐸→🐟 (개구리와 구분)
-        Q2: 번데기 🪹→🫙 (고치 모양)
-        Q3: 씨앗 🫘→🌰 (도토리)
-        Q4: 겨울 ❄️→⛄ (눈사람, 더 직관적)
-        Q5: 씨앗 🫘→🌰, 싹 🌱→🌿 (Q3과 구분), 꽃 🌺→🌸
-        Q12: 손비비기 👏→🙌 (쌍수)
-        Q14: 3단계로 단순화 (냉장고 제거)
-        Q16: 흙덮기 🟤→🫳, 물주기 🚿→🪣 (Q12와 구분)
-        Q18: 편지보내기→도시락 싸기 (낯선 우표/우체통 대신 친숙한 경험)
-        Q20: 그네 ⛓️→🎠 (회전목마, 놀이기구 이모지)
-    */
-    const defaultQuestions = [
-      // ── 순환(cyclic) ──
-      {id:1,type:"cyclic",title:"개구리의 한살이",concept:"개구리는 알에서 깨어나 올챙이가 되고 개구리가 돼요.",
-        cards:[{id:"1-1",text:"알",img:"🥚"},{id:"1-2",text:"올챙이",img:"🐟"},{id:"1-3",text:"개구리",img:"🐸"}]},
-      {id:2,type:"cyclic",title:"나비의 한살이",concept:"나비는 알에서 깨어나 애벌레가 되고 번데기를 거쳐 나비가 돼요.",
-        cards:[{id:"2-1",text:"알",img:"🥚"},{id:"2-2",text:"애벌레",img:"🐛"},{id:"2-3",text:"번데기",img:"🫙"},{id:"2-4",text:"나비",img:"🦋"}]},
-      {id:3,type:"cyclic",title:"사과나무의 성장",concept:"씨앗에서 싹이 나고 자라서 맛있는 사과가 열려요.",
-        cards:[{id:"3-1",text:"씨앗",img:"🌰"},{id:"3-2",text:"새싹",img:"🌱"},{id:"3-3",text:"사과나무",img:"🌳"},{id:"3-4",text:"사과",img:"🍎"}]},
-      {id:4,type:"cyclic",title:"사계절의 변화",concept:"봄, 여름, 가을, 겨울이 지나면 다시 봄이 찾아와요.",
-        cards:[{id:"4-1",text:"봄",img:"🌼"},{id:"4-2",text:"여름",img:"☀️"},{id:"4-3",text:"가을",img:"🍁"},{id:"4-4",text:"겨울",img:"⛄"}]},
-      {id:5,type:"cyclic",title:"강낭콩의 한살이",concept:"강낭콩은 씨앗에서 싹이 트고 꽃을 피운 뒤 다시 강낭콩이 돼요.",
-        cards:[{id:"5-1",text:"씨앗",img:"🌰"},{id:"5-2",text:"싹",img:"🌿"},{id:"5-3",text:"꽃",img:"🌸"},{id:"5-4",text:"강낭콩",img:"🫘"}]},
-      {id:6,type:"cyclic",title:"하루의 변화",concept:"아침, 점심, 저녁, 밤이 지나면 또 아침이 밝아와요.",
-        cards:[{id:"6-1",text:"아침",img:"🌅"},{id:"6-2",text:"점심",img:"🌞"},{id:"6-3",text:"저녁",img:"🌆"},{id:"6-4",text:"밤",img:"🌃"}]},
-      {id:7,type:"cyclic",title:"닭의 성장",concept:"닭은 알에서 깨어나 병아리가 되고 닭이 돼요.",
-        cards:[{id:"7-1",text:"알",img:"🥚"},{id:"7-2",text:"병아리",img:"🐥"},{id:"7-3",text:"닭",img:"🐔"}]},
-      {id:8,type:"cyclic",title:"달의 변화",concept:"달은 초승달에서 반달, 보름달로 커졌다가 다시 작아져요.",
-        cards:[{id:"8-1",text:"초승달",img:"🌙"},{id:"8-2",text:"반달",img:"🌓"},{id:"8-3",text:"보름달",img:"🌕"}]},
-      // ── 순서(linear) ──
-      {id:9,type:"linear",title:"양치질 하기",concept:"치약을 짜서 이를 닦은 뒤 물로 헹궈요.",
-        cards:[{id:"9-1",text:"치약 짜기",img:"🪥"},{id:"9-2",text:"이 닦기",img:"🦷"},{id:"9-3",text:"물로 헹구기",img:"🚰"}]},
-      {id:10,type:"linear",title:"횡단보도 건너기",concept:"횡단보도에서는 먼저 멈추고 살펴본 뒤에 건너요.",
-        cards:[{id:"10-1",text:"멈추기",img:"🛑"},{id:"10-2",text:"살피기",img:"👀"},{id:"10-3",text:"건너기",img:"🚶"}]},
-      {id:11,type:"linear",title:"샌드위치 만들기",concept:"식빵 위에 잼을 바르고 햄을 올린 뒤 빵으로 덮어요.",
-        cards:[{id:"11-1",text:"식빵 놓기",img:"🍞"},{id:"11-2",text:"잼 바르기",img:"🍯"},{id:"11-3",text:"햄 올리기",img:"🥓"},{id:"11-4",text:"식빵 덮기",img:"🥪"}]},
-      {id:12,type:"linear",title:"손 씻기",concept:"비누칠을 하고 손을 비빈 뒤에 물로 헹궈야 해요.",
-        cards:[{id:"12-1",text:"비누칠하기",img:"🧼"},{id:"12-2",text:"손 비비기",img:"🙌"},{id:"12-3",text:"물로 헹구기",img:"🚿"}]},
-      {id:13,type:"linear",title:"책 빌리기",concept:"읽고 싶은 책을 고르고 선생님께 가서 빌려요.",
-        cards:[{id:"13-1",text:"책 고르기",img:"📚"},{id:"13-2",text:"선생님께 가기",img:"👩‍🏫"},{id:"13-3",text:"책 빌리기",img:"📖"}]},
-      {id:14,type:"linear",title:"우유 마시기",concept:"우유를 꺼내 컵에 따른 뒤 맛있게 마셔요.",
-        cards:[{id:"14-1",text:"우유 꺼내기",img:"🥛"},{id:"14-2",text:"컵에 따르기",img:"🫗"},{id:"14-3",text:"마시기",img:"😋"}]},
-      {id:15,type:"linear",title:"방 청소하기",concept:"쓰레기를 버리고 바닥을 쓴 뒤 깨끗하게 닦아요.",
-        cards:[{id:"15-1",text:"쓰레기 버리기",img:"🗑️"},{id:"15-2",text:"바닥 쓸기",img:"🧹"},{id:"15-3",text:"바닥 닦기",img:"🧽"}]},
-      {id:16,type:"linear",title:"씨앗 심기",concept:"화분에 흙을 넣고 씨앗을 놓은 뒤 흙을 덮고 물을 줘요.",
-        cards:[{id:"16-1",text:"흙 넣기",img:"🪴"},{id:"16-2",text:"씨앗 넣기",img:"🫘"},{id:"16-3",text:"흙 덮기",img:"🫳"},{id:"16-4",text:"물 주기",img:"🪣"}]},
-      {id:17,type:"linear",title:"생일 파티",concept:"케이크에 촛불을 켜고 노래를 부른 뒤 촛불을 꺼요.",
-        cards:[{id:"17-1",text:"촛불 켜기",img:"🕯️"},{id:"17-2",text:"노래 부르기",img:"🎵"},{id:"17-3",text:"촛불 끄기",img:"🎂"}]},
-      {id:18,type:"linear",title:"도시락 싸기",concept:"밥을 담고 반찬을 넣은 뒤 뚜껑을 닫아 가방에 넣어요.",
-        cards:[{id:"18-1",text:"밥 담기",img:"🍚"},{id:"18-2",text:"반찬 넣기",img:"🥗"},{id:"18-3",text:"뚜껑 닫기",img:"🥡"},{id:"18-4",text:"가방에 넣기",img:"🎒"}]},
-      {id:19,type:"linear",title:"외출 준비",concept:"먼저 세수를 하고 옷을 입은 뒤 신발을 신어요.",
-        cards:[{id:"19-1",text:"세수하기",img:"🫧"},{id:"19-2",text:"옷 입기",img:"👕"},{id:"19-3",text:"신발 신기",img:"👟"}]},
-      {id:20,type:"linear",title:"놀이터 가기",concept:"놀이터에서 미끄럼틀을 타고 그네도 타고 집에 돌아와요.",
-        cards:[{id:"20-1",text:"미끄럼틀 타기",img:"🛝"},{id:"20-2",text:"그네 타기",img:"🎠"},{id:"20-3",text:"집에 오기",img:"🏠"}]}
-    ];
-    const defaultStudents = ["김철수", "이영희", "박지민"];
+const APP_STATE = {
+  speakerOn:false,micPermitted:false,micStream:null,
+  students:[],questions:[],
+  learnerName:'',learnerClass:'',chosenCount:5,
+  preRecord:{text:'',audioBase64:null,helpCount:0,redoCount:0},
+  postRecord:{text:'',audioBase64:null,helpCount:0,redoCount:0,stars:0,stickers:[]},
+  correct:0,total:0,
+  currentScreen:'mic',activityIdx:0,activityQueue:[],
+};
 
-    const { useState, useEffect, useRef } = React;
+window.addEventListener('load', async () => {
+  setupScale();
+  window.addEventListener('resize', setupScale);
+  await bootstrapData();
+  primeVoices();
+  showScreen('mic');
+});
 
-    /* ── 음성 / 효과음 ── */
-    const speak = (text, soundOn) => {
-      if (!soundOn) return;
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ko-KR'; u.rate = 0.85;
-        window.speechSynthesis.speak(u);
+// 반응형 scale (잘림·스크롤 X)
+function setupScale(){
+  const stage=document.getElementById('stage');
+  const w=window.innerWidth,h=window.innerHeight;
+  stage.style.transform=`scale(${Math.min(w/1280,h/800)})`;
+}
+
+async function bootstrapData(){
+  if(GAS_URL){
+    try{
+      const r=await fetch(GAS_URL+'?action=bootstrap');
+      const d=await r.json();
+      if(d.ok){
+        APP_STATE.students=d.students.length?d.students:FALLBACK_STUDENTS;
+        APP_STATE.questions=d.questions.length?d.questions:FALLBACK_QUESTIONS;
+        return;
       }
-    };
-    const playChime = (soundOn) => {
-      if (!soundOn) return;
-      try {
-        const a = new (window.AudioContext||window.webkitAudioContext)();
-        const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
-        o.connect(g); g.connect(a.destination);
-        o.frequency.setValueAtTime(523,t); o.frequency.setValueAtTime(659,t+.1); o.frequency.setValueAtTime(784,t+.2);
-        g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(.01,t+1);
-        o.start(t); o.stop(t+1);
-      } catch(e){}
-    };
-    const playWrong = (soundOn) => {
-      if (!soundOn) return;
-      try {
-        const a = new (window.AudioContext||window.webkitAudioContext)();
-        const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
-        o.connect(g); g.connect(a.destination); o.type='triangle';
-        o.frequency.setValueAtTime(150,t); o.frequency.linearRampToValueAtTime(100,t+.3);
-        g.gain.setValueAtTime(.2,t); g.gain.exponentialRampToValueAtTime(.01,t+.5);
-        o.start(t); o.stop(t+.5);
-      } catch(e){}
-    };
-    const fireConfetti = () => {
-      if (!window.confetti) return;
-      const end = Date.now()+2000;
-      const iv = setInterval(()=>{
-        if(Date.now()>end) return clearInterval(iv);
-        window.confetti({particleCount:40,spread:360,startVelocity:28,origin:{x:Math.random(),y:Math.random()-.2},zIndex:999});
-      },200);
-    };
+    }catch(e){console.warn('GAS 로드 실패',e);}
+  }
+  APP_STATE.students=FALLBACK_STUDENTS;
+  APP_STATE.questions=FALLBACK_QUESTIONS;
+}
 
-    /* ── 수료증 캔버스 ── */
-    function generateCanvas(name, score, total) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 800; canvas.height = 1100;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,800,1100);
-      ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,800,400);
-      ctx.fillStyle = '#1e3a8a'; ctx.font = 'bold 50px "Malgun Gothic",sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('탐험 결과', 400, 80);
-      ctx.fillStyle = '#334155'; ctx.font = 'bold 36px "Malgun Gothic",sans-serif';
-      ctx.fillText(`총 ${total}문제 중 ${score}문제 정답!`, 400, 180);
-      const cy = 400;
-      ctx.fillStyle = '#fffbeb'; ctx.fillRect(0,cy,800,700);
-      ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 10; ctx.setLineDash([20,15]);
-      ctx.strokeRect(40,cy+40,720,620); ctx.setLineDash([]);
-      ctx.font='80px Arial'; ctx.fillText('🏆',400,cy+160);
-      ctx.fillStyle='#92400e'; ctx.font='bold 60px "Malgun Gothic",sans-serif';
-      ctx.fillText('훌륭한 이야기꾼 상',400,cy+260);
-      ctx.fillStyle='#333'; ctx.font='bold 44px "Malgun Gothic",sans-serif';
-      ctx.fillText(`${name} 친구`,400,cy+360);
-      ctx.font='32px "Malgun Gothic",sans-serif'; ctx.fillStyle='#475569';
-      ctx.fillText('위 어린이는 주어진 사건의 순서를',400,cy+450);
-      ctx.fillText('모두 올바르게 이해하고 설명하였기에',400,cy+500);
-      ctx.fillText('이 상장을 수여합니다.',400,cy+550);
-      ctx.font='26px "Malgun Gothic",sans-serif'; ctx.fillStyle='#94a3b8';
-      const d = new Date();
-      ctx.fillText(`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`,400,cy+630);
-      return canvas;
-    }
+// ============================================
+// 🔊 1. TTS — 자연스러운 한국어 음성 우선
+// ============================================
+let CACHED_VOICE=null;
+function primeVoices(){
+  if(!('speechSynthesis' in window))return;
+  if(speechSynthesis.getVoices().length===0){
+    speechSynthesis.addEventListener('voiceschanged',selectBestVoice,{once:true});
+  }else selectBestVoice();
+}
+function selectBestVoice(){
+  const voices=speechSynthesis.getVoices();
+  // 1순위: Google 한국어 클라우드 (가장 자연스러움)
+  let v=voices.find(x=>x.lang==='ko-KR' && x.name.toLowerCase().includes('google') && !x.localService);
+  // 2순위: Wavenet/Neural2
+  if(!v) v=voices.find(x=>x.lang==='ko-KR' && /wavenet|neural|ko-kr-wavenet|ko-kr-neural/i.test(x.name));
+  // 3순위: 자연스러움 키워드
+  if(!v) v=voices.find(x=>x.lang==='ko-KR' && /wavenet|neural|premium|enhanced|natural/i.test(x.name));
+  // 4순위: 아무 한국어 음성
+  if(!v) v=voices.find(x=>x.lang==='ko-KR');
+  CACHED_VOICE=v||null;
+}
+function speak(text,opts){
+  if(!APP_STATE.speakerOn||!('speechSynthesis' in window))return Promise.resolve();
+  opts=opts||{};
+  return new Promise(resolve=>{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR'; u.rate=opts.rate||0.95; u.pitch=opts.pitch||1.0; u.volume=1.0;  // pitch 1.0 = 갈라짐 방지
+    if(CACHED_VOICE)u.voice=CACHED_VOICE;
+    u.onend=u.onerror=()=>resolve();
+    speechSynthesis.speak(u);
+  });
+}
 
-    /* ── 원형 레이아웃 ── */
-    const CircularLayout = ({items}) => {
-      const R = 95;
-      return (
-        <div className="relative mx-auto flex items-center justify-center" style={{width:270,height:270}}>
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 270 270">
-            <circle cx="135" cy="135" r="95" fill="none" stroke="#bbf7d0" strokeWidth="6" strokeDasharray="14 14"/>
-          </svg>
-          {items.map((it,i)=>{
-            const a=(i/items.length)*2*Math.PI - Math.PI/2;
-            return (
-              <div key={i} className="absolute flex flex-col items-center" style={{transform:`translate(${R*Math.cos(a)}px,${R*Math.sin(a)}px)`}}>
-                <div style={{fontSize:'2.8rem',background:'white',borderRadius:'50%',padding:'0.5rem',boxShadow:'0 4px 12px rgba(0,0,0,.15)',border:'4px solid #86efac'}}>{it.img}</div>
-                <span style={{fontSize:'0.95rem',fontWeight:'900',marginTop:'4px',color:'#334155',background:'rgba(255,255,255,0.95)',padding:'2px 8px',borderRadius:'999px',whiteSpace:'nowrap'}}>{it.text}</span>
-              </div>
-            );
-          })}
-        </div>
-      );
+// TTS 글자 단위 하이라이트 (boundary 부정확 → setInterval로 글자 흐름)
+async function speakWithHighlight(text,container){
+  if(!APP_STATE.speakerOn||!container)return;
+  const chars=[...text];
+  container.innerHTML=chars.map((ch,i)=>
+    /\s/.test(ch)?ch:`<span class="tts-char" data-i="${i}">${ch}</span>`).join('');
+  return new Promise(resolve=>{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ko-KR'; u.rate=0.95; u.pitch=1.0;
+    if(CACHED_VOICE)u.voice=CACHED_VOICE;
+    let timer=null,startTime=null;
+    const estimateMs=chars.length*120;
+    u.onstart=()=>{
+      startTime=Date.now();
+      timer=setInterval(()=>{
+        const elapsed=Date.now()-startTime;
+        const idx=Math.floor((elapsed/estimateMs)*chars.length);
+        container.querySelectorAll('.tts-char').forEach(s=>{
+          s.classList.toggle('active', +s.dataset.i<=idx);
+        });
+      },40);
     };
+    u.onend=u.onerror=()=>{
+      if(timer)clearInterval(timer);
+      container.querySelectorAll('.tts-char').forEach(s=>s.classList.add('active'));
+      setTimeout(()=>container.querySelectorAll('.tts-char').forEach(s=>s.classList.remove('active')),500);
+      resolve();
+    };
+    speechSynthesis.speak(u);
+  });
+}
 
-    /* ── 직선 레이아웃 ── */
-    const LinearLayout = ({items}) => (
-      <div style={{display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:'0.5rem',padding:'0.5rem 0',width:'100%'}}>
-        {items.map((it,i)=>(
-          <div key={i} style={{display:'flex',alignItems:'center'}}>
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
-              <div style={{fontSize:'2.8rem',background:'white',borderRadius:'1rem',padding:'0.6rem',boxShadow:'0 4px 12px rgba(0,0,0,.15)',border:'4px solid #bfdbfe'}}>{it.img}</div>
-              <span style={{fontSize:'0.95rem',fontWeight:'900',marginTop:'4px',color:'#334155',textAlign:'center',wordBreak:'keep-all'}}>{it.text}</span>
-            </div>
-            {i<items.length-1 && <svg style={{width:'1.75rem',height:'1.75rem',color:'#93c5fd',margin:'0 4px',flexShrink:0}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>}
-          </div>
-        ))}
+function toggleSpeaker(){
+  APP_STATE.speakerOn=!APP_STATE.speakerOn;
+  const btn=document.getElementById('speaker-btn');
+  btn.textContent=APP_STATE.speakerOn?'🔊':'🔇';
+  btn.classList.toggle('active',APP_STATE.speakerOn);
+  if(!APP_STATE.speakerOn)speechSynthesis.cancel();
+}
+
+// ============================================
+// 🎵 2. 효과음 (스피커 ON일 때만)
+// ============================================
+let AUDIO_CTX=null;
+function getAudio(){if(!AUDIO_CTX)AUDIO_CTX=new(window.AudioContext||window.webkitAudioContext)();return AUDIO_CTX;}
+function playTone(freq,dur,type='sine',vol=0.3){
+  if(!APP_STATE.speakerOn)return;
+  try{
+    const ctx=getAudio();const osc=ctx.createOscillator();const gain=ctx.createGain();
+    osc.type=type;osc.frequency.value=freq;osc.connect(gain);gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.start();osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function sfxCorrect(){playTone(660,0.12,'sine',0.3);setTimeout(()=>playTone(880,0.18,'sine',0.3),120);}
+function sfxWrong(){playTone(220,0.25,'sine',0.25);}
+function sfxCheer(){playTone(523,0.10);setTimeout(()=>playTone(659,0.10),100);setTimeout(()=>playTone(784,0.20),200);}
+
+// ============================================
+// 🎊 3. 폭죽
+// ============================================
+function launchConfetti(count=40){
+  const box=document.getElementById('confetti');
+  box.classList.remove('hidden');box.innerHTML='';
+  const colors=['#FFC23C','#FF6FA8','#5BB836','#3A8DDE','#FFE600','#9B59B6'];
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');p.className='confetti-piece';
+    p.style.left=(Math.random()*100)+'%';p.style.background=colors[i%colors.length];
+    p.style.animationDelay=(Math.random()*0.4)+'s';
+    p.style.transform=`rotate(${Math.random()*360}deg)`;
+    box.appendChild(p);
+  }
+  setTimeout(()=>{box.classList.add('hidden');box.innerHTML='';},2200);
+}
+
+// ============================================
+// 🎤 4. 마이크 허가 (앱 시작 시 1번만)
+// ============================================
+async function requestMicOnce(){
+  if(APP_STATE.micPermitted)return true;
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    APP_STATE.micStream=s; APP_STATE.micPermitted=true;
+    return true;
+  }catch(e){console.warn('마이크 거부:',e);return false;}
+}
+
+// ============================================
+// 📺 5. 화면 라우팅
+// ============================================
+function showScreen(id){
+  APP_STATE.currentScreen=id;
+  const root=document.getElementById('screens');
+  root.innerHTML='';
+  const screen=document.createElement('div');
+  screen.id='screen-'+id;
+  let theme='intro';
+  if(id==='activity'){
+    const s=currentActivityQuestion()?.stage||'gather-same';
+    if(s.startsWith('gather'))theme='gather';
+    else if(s.startsWith('split'))theme='split';
+    else theme='merge';
+  }
+  screen.className='screen active theme-'+theme;
+  root.appendChild(screen);
+  updateProgress();
+  switch(id){
+    case 'mic':renderMicGate(screen);break;
+    case 'setup':renderSetup(screen);break;
+    case 'intro':renderIntro(screen);break;
+    case 'goals':renderGoals(screen);break;
+    case 'inquiry-pre':renderInquiry('pre');break;
+    case 'pre-record':renderRecord(screen,'pre');break;
+    case 'inquiry-post':renderInquiry('post');break;
+    case 'activity':renderActivity(screen);break;
+    case 'post-record':renderRecord(screen,'post');break;
+    case 'cert':renderCert(screen);break;
+  }
+}
+function updateProgress(){
+  const t=APP_STATE.chosenCount,d=APP_STATE.activityIdx||0;
+  document.getElementById('progress-fill').style.width=(t>0?(d/t)*100:0)+'%';
+  document.getElementById('progress-label').textContent=APP_STATE.currentScreen==='activity'?`${d} / ${t}`:'준비';
+}
+function goHome(){
+  if(!confirm('처음 화면으로 돌아갈까요?'))return;
+  Object.assign(APP_STATE,{learnerName:'',correct:0,total:0,activityIdx:0,
+    preRecord:{text:'',audioBase64:null,helpCount:0,redoCount:0},
+    postRecord:{text:'',audioBase64:null,helpCount:0,redoCount:0,stars:0,stickers:[]}});
+  showScreen('mic');
+}
+
+// ============================================
+// 🎤 6. 마이크 허가 게이트
+// ============================================
+function renderMicGate(root){
+  root.innerHTML=`
+    <div class="theme-intro" style="position:absolute;inset:0"></div>
+    <div class="mic-gate" style="position:relative">
+      <div class="big-mic">🎤</div>
+      <div style="font-family:var(--font-display);font-size:40px;color:var(--intro-text)">마이크를 켜 볼까요?</div>
+      <div style="font-family:var(--font-display);font-size:22px;color:#666;max-width:600px;line-height:1.5">
+        모음이와 나눔이가 우리 이야기를 들으려고 해요.<br/>한 번만 허용해 주면 오늘 활동 내내 사용해요. 🌱
       </div>
-    );
+      <button class="big-btn green" onclick="micProceed(true)">🎤 마이크 허용하기</button>
+      <div class="tutorial-hint">💡 위 버튼을 누르면 마이크 허가 창이 떠요</div>
+      <button class="skip-btn" onclick="micProceed(false)">마이크 없이 시작 (글로 써서 활동)</button>
+    </div>`;
+}
+async function micProceed(askMic){
+  if(askMic)await requestMicOnce();
+  try{getAudio().resume();}catch(e){}
+  showScreen('setup');
+}
 
-    /* ── 소리 토글 ── */
-    const SoundToggle = ({soundOn, setSoundOn}) => {
-      const toggle = () => {
-        setSoundOn(!soundOn);
-        try { const a = new (window.AudioContext||window.webkitAudioContext)(); if(a.state==='suspended') a.resume(); } catch(e){}
-      };
-      return (
-        <button onClick={toggle} className={`fixed top-3 right-3 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-2xl border-2 transition-all ${soundOn ? 'bg-green-100 border-green-400 text-green-600' : 'bg-white border-slate-200 text-slate-400'}`}>
-          {soundOn ? '🔊' : '🔇'}
-        </button>
-      );
-    };
+// ============================================
+// 🧑‍🎓 7. 학생 선택 + 문제 수
+// ============================================
+function renderSetup(root){
+  const opts=APP_STATE.students.map(s=>`<option value="${s.name}|${s.clazz}">${s.clazz?s.clazz+' ':''}${s.name}</option>`).join('');
+  root.innerHTML=`
+    <div class="theme-intro" style="position:absolute;inset:0"></div>
+    <div class="setup-wrap" style="position:relative">
+      <div class="setup-card">
+        <h2>🌱 누가 활동할까요?</h2>
+        <div class="setup-row">
+          <label>이름 골라요</label>
+          <select id="student-select"><option value="">— 이름을 골라요 —</option>${opts}</select>
+        </div>
+        <div class="setup-row">
+          <label>몇 문제를 풀어 볼까요?</label>
+          <div class="choice-row" id="count-row">
+            <button data-c="3">3문제</button>
+            <button data-c="5" class="selected">5문제</button>
+            <button data-c="10">10문제</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:24px">
+          <button class="big-btn green" onclick="finishSetup()">시작하기 ▶</button>
+          <div class="tutorial-hint">💡 이름을 고르고 시작하기를 눌러요</div>
+        </div>
+      </div>
+    </div>`;
+  root.querySelectorAll('#count-row button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      root.querySelectorAll('#count-row button').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');APP_STATE.chosenCount=+b.dataset.c;
+    });
+  });
+  speak('이름을 골라 주세요');
+}
+function finishSetup(){
+  const sel=document.getElementById('student-select');
+  if(!sel.value){alert('이름을 골라 주세요!');return;}
+  const [name,clazz]=sel.value.split('|');
+  APP_STATE.learnerName=name; APP_STATE.learnerClass=clazz;
+  prepareActivityQueue();
+  showScreen('intro');
+}
 
-    /* ── 메인 앱 ── */
-    const App = () => {
-      const [phase, setPhase] = useState("loading");
-      const [students, setStudents] = useState([]);
-      const [selectedStudent, setSelectedStudent] = useState("");
-      const [allQuestions, setAllQuestions] = useState([]);
-      const [activeQuestions, setActiveQuestions] = useState([]);
-      const [qIndex, setQIndex] = useState(0);
+function prepareActivityQueue(){
+  const allStages=['gather-same','gather-mixed','gather-card','gather-many','split-equal','split-card','split-many'];
+  const byStage={};
+  APP_STATE.questions.forEach(q=>{if(!byStage[q.stage])byStage[q.stage]=[];byStage[q.stage].push(q);});
+  const queue=[];let round=0;
+  while(queue.length<APP_STATE.chosenCount){
+    for(const s of allStages){
+      if(queue.length>=APP_STATE.chosenCount)break;
+      if(byStage[s]?.length>0){queue.push(byStage[s][round%byStage[s].length]);}
+    }
+    round++; if(round>5)break;
+  }
+  APP_STATE.activityQueue=queue.slice(0,APP_STATE.chosenCount);
+  APP_STATE.activityIdx=0;
+}
+function currentActivityQuestion(){return APP_STATE.activityQueue?APP_STATE.activityQueue[APP_STATE.activityIdx]:null;}
 
-      const [slots, setSlots] = useState([]);
-      const [pool, setPool] = useState([]);
-      const [draggedIndex, setDraggedIndex] = useState(null);
-      const [dragOverIndex, setDragOverIndex] = useState(null);
+// ============================================
+// 🎉 8. 인트로
+// ============================================
+function renderIntro(root){
+  root.innerHTML=`
+    <div class="hero">
+      <div class="app-title">모으기와 가르기</div>
+      <div class="subtitle">— 모음이와 나눔이의 수 모험 —</div>
+      <div class="mascots">
+        <div class="mascot-wrap">${svgMoEum(160)}<div class="mascot-name m">모음이 (모으기)</div></div>
+        <div class="mascot-wrap">${svgNaNum(160)}<div class="mascot-name n">나눔이 (가르기)</div></div>
+      </div>
+      <div style="font-family:var(--font-display);font-size:22px;color:#8a6800">
+        ${APP_STATE.learnerName}이/가 ${APP_STATE.chosenCount}문제 모험을 시작해요!
+      </div>
+      <button class="big-btn" onclick="showScreen('goals')">계속하기 ▶</button>
+    </div>`;
+  speak('모으기와 가르기를 시작해요');
+}
 
-      const [score, setScore] = useState(0);
-      const [soundOn, setSoundOn] = useState(false);
+// ============================================
+// 🎯 9. 오늘의 목표
+// ============================================
+function renderGoals(root){
+  root.innerHTML=`
+    <div class="goals-wrap">
+      <div class="goals-title">🎯 오늘의 목표</div>
+      <div class="goal-list">
+        <div class="goal-item"><div class="goal-icon">1</div><div>두 수를 <span style="color:var(--gather-deep)">모아서</span> 합을 구할 수 있어요</div></div>
+        <div class="goal-item"><div class="goal-icon">2</div><div>한 수를 <span style="color:var(--split-deep)">두 수로 가르는</span> 방법을 찾을 수 있어요</div></div>
+        <div class="goal-item"><div class="goal-icon">3</div><div>같은 수도 <span style="color:var(--merge-accent)">여러 가지 방법</span>으로 표현할 수 있어요</div></div>
+      </div>
+      <button class="big-btn green" onclick="showScreen('inquiry-pre')">목표를 확인했어요 ✓</button>
+    </div>`;
+  speak('오늘 목표를 살펴봐요');
+}
 
-      const [mediaRecorder, setMediaRecorder] = useState(null);
-      const [isRecording, setIsRecording] = useState(false);
-      const [audioBlob, setAudioBlob] = useState(null);
-      const [audioBase64, setAudioBase64] = useState(null);
-      const audioChunksRef = useRef([]);
+// ============================================
+// 🤔 10. 탐구질문 팝업
+// ============================================
+function renderInquiry(phase){
+  const mount=document.getElementById('inquiry-mount');
+  const isPre=phase==='pre';
+  const cfg=isPre
+    ? {icon:'🤔',q:'왜 모으기와 가르기를 배울까요?',a:'두 묶음을 합쳐야 할 때 모으기를, 한 묶음을 나눌 때 가르기를 써요. 친구와 사탕을 나눠 먹거나, 장난감을 같이 모을 때처럼요. 우리 생활에서 자주 만나는 수의 기본이에요!',next:'pre-record'}
+    : {icon:'💡',q:'활동을 마쳤어요! 새로 알게 된 게 뭘까요?',a:'같은 수 6도 1과 5, 2와 4, 3과 3 처럼 여러 가지로 갈라져요. 그리고 두 수를 모으면 어떤 수가 되는지도 그림으로 그릴 수 있게 됐죠. 멋져요!',next:'post-record'};
+  mount.innerHTML=`
+    <div class="inquiry-modal">
+      <div class="inquiry-card">
+        <div class="icon">${cfg.icon}</div>
+        <h2 id="inquiry-q">${cfg.q}</h2>
+        <div class="answer-box" id="inquiry-a">${cfg.a}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <button class="big-btn green" onclick="closeInquiry('${cfg.next}')">알겠어요! 다음 ▶</button>
+          <div class="tutorial-hint">💡 답을 읽고 다음 버튼을 누르세요</div>
+        </div>
+      </div>
+    </div>`;
+  // 글자 단위 TTS 하이라이트 (스피커 ON일 때만)
+  setTimeout(()=>speakWithHighlight(cfg.a, document.getElementById('inquiry-a')),300);
+}
+function closeInquiry(next){
+  document.getElementById('inquiry-mount').innerHTML='';
+  // 사후 단계로 가기 전에는 activity 끝나야 함 → 'post-record'로 가는 거 OK
+  showScreen(next);
+}
 
-      const currentQ = activeQuestions[qIndex];
+// ============================================
+// 🎤 11. 녹음 (사전·사후 공용)
+// ============================================
+let mediaRecorder=null,recordChunks=[],speechRecognition=null,finalTranscript='';
+function cleanTranscript(t){if(!t)return '';let c=t;c=c.replace(/\bT\d+[:\d]*\b/gi,'');c=c.replace(/\b[A-Z]\d+\b/g,'');c=c.replace(/(?:^|\s)[a-zA-Z](?=\s|$)/g,' ');return c.replace(/\s+/g,' ').trim();}
+function getExamples(phase){
+  if(phase==='pre')return[
+    '모으기는 두 묶음을 하나로 합치는 거예요',
+    '모으기는 더 많아지는 거예요',
+    '가르기는 한 묶음을 두 개로 나누는 거예요',
+    '잘 모르겠지만 한번 해 볼래요',
+  ];
+  return[
+    '모으기는 두 수를 더하는 것 같아요',
+    '가르기는 한 수를 두 수로 나누는 거예요',
+    '같은 수도 여러 가지 방법으로 가를 수 있어요',
+    '예를 들면 5는 1과 4, 2와 3으로 갈라져요',
+  ];
+}
+function renderRecord(root,phase){
+  const isPre=phase==='pre';
+  const rec=isPre?APP_STATE.preRecord:APP_STATE.postRecord;
+  const meaning=isPre
+    ? `<div class="record-meaning pre">📌 <b>활동 전 녹음</b>이에요!<br/>지금 알고 있는 만큼만 말해도 괜찮아요. <span class="small">활동이 끝나고 다시 녹음해서 비교해 볼 거예요 🌱</span></div>`
+    : `<div class="record-meaning post">🌟 <b>활동 후 녹음</b>이에요!<br/>처음 녹음과 비교해서 새롭게 알게 된 점을 말해 줘요. <span class="small">"이제는 ~할 수 있어요!" 처럼요 🌟</span></div>`;
+  const prompt=isPre?'"모으기"와 "가르기"가 무엇인지 생각나는 대로 말해 봐요':'오늘 배운 "모으기"와 "가르기"가 무엇인지 정리해서 말해 봐요';
+  root.className='screen active theme-intro';
+  root.innerHTML=`
+    <div class="record-wrap">
+      ${meaning}
+      <div style="font-family:var(--font-display);font-size:22px;color:#444;text-align:center" id="tts-prompt">${prompt}</div>
+      <div class="record-main">
+        <div class="record-btn-col">
+          <button class="record-btn" id="rec-btn" onclick="toggleRecord('${phase}')"><div class="dot"></div></button>
+          <div class="tutorial-hint" id="rec-tutorial">🎤 빨간 동그라미를 눌러 시작</div>
+        </div>
+        <div class="record-text-area">
+          <div class="stt-status">
+            <span>📝 내가 말한 내용 <span style="font-size:14px;color:#aaa">(직접 고치거나 써도 좋아요)</span></span>
+            <span id="stt-status">${rec.audioBase64?'✅ 녹음 완료':''}</span>
+          </div>
+          <textarea id="transcript-area" placeholder="여기에 글로 써도 좋아요…">${rec.text||''}</textarea>
+          <div class="stt-interim" id="interim-area"></div>
+        </div>
+      </div>
+      <div class="record-actions" id="rec-actions">
+        <button class="big-btn small blue" onclick="toggleHelp('${phase}')">💡 도움받기</button>
+        <button class="big-btn small gray" id="play-rec-btn" onclick="playBackRecord('${phase}')" ${rec.audioBase64?'':'disabled'}>🎧 녹음 들어보기</button>
+        <button class="big-btn small green" id="play-tts-btn" onclick="playTranscriptTTS()">🔊 완성 문장 듣기</button>
+        <button class="big-btn small gray" onclick="redoRecord('${phase}')" ${rec.audioBase64?'':'disabled'}>🔄 다시 녹음</button>
+      </div>
+      <div class="tutorial-hint">💡 녹음했으면 들어보고, 글을 고친 뒤 다음을 눌러요</div>
+      <div id="help-panel-mount"></div>
+      ${isPre?`
+        <div style="display:flex;gap:14px;margin-top:auto">
+          <button class="big-btn green" onclick="finishRecord('pre'); showScreen('activity')">다음 ▶</button>
+          <button class="skip-btn" onclick="finishRecord('pre'); showScreen('activity')">건너뛰기</button>
+        </div>`:`<div id="post-followup"></div>`}
+    </div>`;
+  speak(prompt);
+}
 
-      useEffect(()=>{
-        const loadData = async () => {
-          if (!window.GAS_API_URL || window.GAS_API_URL.trim()==='') {
-            setStudents(defaultStudents); setSelectedStudent(defaultStudents[0]);
-            setAllQuestions(defaultQuestions); setPhase("login"); return;
-          }
-          try {
-            const res = await fetch(window.GAS_API_URL);
-            const data = await res.json();
-            const sts = data.students?.length ? data.students : defaultStudents;
-            setStudents(sts); setSelectedStudent(sts[0]);
-            setAllQuestions(data.questions?.length ? data.questions : defaultQuestions);
-            setPhase("login");
-          } catch(e) {
-            setStudents(defaultStudents); setSelectedStudent(defaultStudents[0]);
-            setAllQuestions(defaultQuestions); setPhase("login");
-          }
+async function toggleRecord(phase){
+  const btn=document.getElementById('rec-btn');
+  const tutorial=document.getElementById('rec-tutorial');
+  const sttStatus=document.getElementById('stt-status');
+  const ta=document.getElementById('transcript-area');
+  const interim=document.getElementById('interim-area');
+  const rec=phase==='pre'?APP_STATE.preRecord:APP_STATE.postRecord;
+
+  if(!mediaRecorder||mediaRecorder.state==='inactive'){
+    if(!APP_STATE.micPermitted){
+      const ok=await requestMicOnce();
+      if(!ok){tutorial.textContent='⚠️ 마이크 거부됨. 글로 써 주세요';return;}
+    }
+    try{
+      let stream=APP_STATE.micStream;
+      if(!stream||!stream.active){stream=await navigator.mediaDevices.getUserMedia({audio:true});APP_STATE.micStream=stream;}
+      mediaRecorder=new MediaRecorder(stream);
+      recordChunks=[];finalTranscript='';
+      mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordChunks.push(e.data);};
+      mediaRecorder.onstop=()=>{
+        const blob=new Blob(recordChunks,{type:'audio/webm'});
+        const reader=new FileReader();
+        reader.onloadend=()=>{
+          rec.audioBase64=reader.result;rec.text=ta.value;
+          document.getElementById('play-rec-btn').removeAttribute('disabled');
+          document.querySelectorAll('#rec-actions button').forEach(b=>b.removeAttribute('disabled'));
+          tutorial.textContent='✅ 녹음 완료! 들어보고 글도 고쳐 봐요';
+          sttStatus.textContent='✅ 녹음 완료';
+          if(phase==='post')showPostFollowup();
         };
-        loadData();
-      },[]);
-
-      const startMicRequest = () => setPhase("mic_request");
-
-      const requestMicAccess = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-          recorder.ondataavailable = (e) => { if(e.data.size>0) audioChunksRef.current.push(e.data); };
-          recorder.onstop = () => {
-            const blob = new Blob(audioChunksRef.current, {type:'audio/webm'});
-            setAudioBlob(blob);
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => setAudioBase64(reader.result);
-          };
-          setMediaRecorder(recorder);
-          speak(`환영합니다 ${selectedStudent} 친구!`, soundOn);
-          if(!allQuestions.length){ alert("문제가 없습니다. 구글 시트를 확인해주세요."); return; }
-          setPhase("count_select");
-        } catch(err) {
-          alert("마이크가 허용되지 않아 녹음 기능을 사용할 수 없습니다. 그래도 진행합니다!");
-          speak(`환영합니다 ${selectedStudent} 친구!`, soundOn);
-          if(!allQuestions.length){ alert("문제가 없습니다."); return; }
-          setPhase("count_select");
-        }
+        reader.readAsDataURL(blob);
       };
+      mediaRecorder.start();
+      btn.classList.add('recording');
+      tutorial.textContent='🔴 녹음 중… 한 번 더 눌러 멈춰요';
 
-      const startGame = (count) => {
-        let s = [...allQuestions].sort(()=>0.5-Math.random());
-        if(count!=='ALL') s = s.slice(0,count);
-        setActiveQuestions(s); setQIndex(0); setScore(0); setPhase("concept");
-      };
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(SR){
+        speechRecognition=new SR();
+        speechRecognition.lang='ko-KR';speechRecognition.continuous=true;speechRecognition.interimResults=true;
+        speechRecognition.onresult=(event)=>{
+          let im='';
+          for(let i=event.resultIndex;i<event.results.length;i++){
+            const r=event.results[i];
+            if(r.isFinal)finalTranscript+=r[0].transcript+' ';
+            else im+=r[0].transcript;
+          }
+          ta.value=cleanTranscript(finalTranscript);
+          interim.textContent=im;
+        };
+        speechRecognition.onerror=(e)=>console.warn('STT:',e.error);
+        speechRecognition.onend=()=>{interim.textContent='';};
+        try{speechRecognition.start();sttStatus.textContent='🎙️ 듣고 있어요…';}catch(e){}
+      }else{sttStatus.textContent='⚠️ 글로 써 주세요 (음성 인식 미지원)';}
+    }catch(err){tutorial.textContent='⚠️ 마이크 오류. 글로 써 주세요!';}
+  }else{
+    mediaRecorder.stop();btn.classList.remove('recording');
+    if(speechRecognition){try{speechRecognition.stop();}catch(e){}speechRecognition=null;}
+  }
+}
 
-      const startQuiz = () => {
-        const shuffled = [...currentQ.cards].sort(()=>0.5-Math.random());
-        setPool(shuffled); setSlots(new Array(currentQ.cards.length).fill(null)); setPhase("quiz");
-      };
+function toggleHelp(phase){
+  const mount=document.getElementById('help-panel-mount');
+  if(mount.querySelector('.help-panel')){mount.innerHTML='';return;}
+  const examples=getExamples(phase);
+  const rec=phase==='pre'?APP_STATE.preRecord:APP_STATE.postRecord;
+  rec.helpCount++;
+  mount.innerHTML=`
+    <div class="help-panel">
+      💡 이렇게 말해 봐요 — 눌러서 들어 봐요 (스스로 한번 도전해 봐요!)
+      <div class="examples">
+        ${examples.map((e,i)=>`<div class="ex-item" data-i="${i}"><span class="ex-text">${e}</span><span style="font-size:16px">🔊</span></div>`).join('')}
+      </div>
+    </div>`;
+  mount.querySelectorAll('.ex-item').forEach((el,i)=>{
+    el.addEventListener('click',()=>{
+      const wasOn=APP_STATE.speakerOn;
+      if(!wasOn)toggleSpeaker();
+      speakWithHighlight(examples[i], el.querySelector('.ex-text'));
+    });
+  });
+}
 
-      const tapPoolCard = (card) => {
-        const i = slots.findIndex(s=>s===null);
-        if(i===-1) return;
-        const ns = [...slots]; ns[i]=card; setSlots(ns);
-        setPool(pool.filter(c=>c.id!==card.id));
-      };
+function playBackRecord(phase){
+  const rec=phase==='pre'?APP_STATE.preRecord:APP_STATE.postRecord;
+  if(!rec.audioBase64)return;
+  new Audio(rec.audioBase64).play().catch(e=>console.warn(e));
+}
 
-      const tapSlotCard = (card, idx) => {
-        if(!card) return;
-        const ns = [...slots]; ns[idx]=null; setSlots(ns);
-        setPool([...pool, card]);
-      };
+// 완성 문장 듣기 — textarea의 내용을 TTS로 (스피커 자동 켜기)
+function playTranscriptTTS(){
+  const ta=document.getElementById('transcript-area');
+  if(!ta||!ta.value.trim()){alert('먼저 녹음하거나 글을 써 주세요!');return;}
+  if(!APP_STATE.speakerOn)toggleSpeaker();
+  speak(ta.value);
+}
 
-      const handleDragStart = (e, idx) => {
-        setDraggedIndex(idx);
-        if(e.dataTransfer){ e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",""); }
-      };
-      const handleDragOver = (e, idx) => { e.preventDefault(); if(dragOverIndex!==idx) setDragOverIndex(idx); };
-      const handleDragLeave = () => setDragOverIndex(null);
-      const handleDrop = (e, dropIdx) => {
-        e.preventDefault(); setDragOverIndex(null);
-        if(draggedIndex===null||draggedIndex===dropIdx) return;
-        const ns = [...slots]; const tmp=ns[draggedIndex]; ns[draggedIndex]=ns[dropIdx]; ns[dropIdx]=tmp;
-        setSlots(ns); setDraggedIndex(null);
-      };
+function redoRecord(phase){
+  const rec=phase==='pre'?APP_STATE.preRecord:APP_STATE.postRecord;
+  rec.audioBase64=null;rec.redoCount++;
+  document.getElementById('transcript-area').value='';
+  document.getElementById('stt-status').textContent='';
+  document.getElementById('rec-tutorial').textContent='🎤 다시 빨간 동그라미를 눌러 시작';
+  document.getElementById('play-rec-btn').setAttribute('disabled','');
+  const fp=document.getElementById('post-followup');
+  if(fp)fp.innerHTML='';
+}
+function finishRecord(phase){
+  const rec=phase==='pre'?APP_STATE.preRecord:APP_STATE.postRecord;
+  const ta=document.getElementById('transcript-area');
+  if(ta)rec.text=ta.value;
+  if(mediaRecorder&&mediaRecorder.state!=='inactive'){try{mediaRecorder.stop();}catch(e){}}
+  if(speechRecognition){try{speechRecognition.stop();}catch(e){}speechRecognition=null;}
+}
 
-      const checkAnswer = () => {
-        if(slots.includes(null)){ alert("빈칸을 모두 채워주세요!"); return; }
-        const ok = slots.every((it,i)=>it.id===currentQ.cards[i].id);
-        if(ok){ setScore(s=>s+1); playChime(soundOn); fireConfetti(); speak("정답입니다!",soundOn); setPhase("feedback"); }
-        else { playWrong(soundOn); setPhase("wrong"); }
-      };
+// 사후 — 자기평가 별점 + 스티커
+function showPostFollowup(){
+  const mount=document.getElementById('post-followup');
+  if(!mount)return;
+  mount.innerHTML=`
+    <div class="self-eval">
+      <h3>⭐ 내 녹음, 어땠어요?</h3>
+      <div class="star-row" id="star-row">${[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}">★</span>`).join('')}</div>
+      <div class="tutorial-hint">💡 별을 눌러 스스로 평가해 봐요 (정답은 없어요!)</div>
+      <div id="eval-result" style="margin-top:8px"></div>
+    </div>`;
+  mount.querySelectorAll('.star').forEach(s=>{
+    s.addEventListener('click',()=>{
+      const n=+s.dataset.n;APP_STATE.postRecord.stars=n;
+      mount.querySelectorAll('.star').forEach(x=>x.classList.toggle('filled',+x.dataset.n<=n));
+      sfxCheer();
+      const er=document.getElementById('eval-result');
+      if(n<=3){
+        er.innerHTML=`
+          <div style="background:#FEF3C7;border:3px solid #F59E0B;border-radius:14px;padding:12px;font-family:var(--font-display);font-size:18px;color:#92400E">
+            🌱 다시 한번 도전해 볼까요? 처음보다 더 잘 말할 수 있어요!
+            <div style="margin-top:8px;display:flex;gap:10px;justify-content:center">
+              <button class="big-btn small green" onclick="redoRecord('post')">🔄 다시 녹음</button>
+              <button class="big-btn small gray" onclick="goToStickerStep()">괜찮아요, 다음으로</button>
+            </div>
+          </div>`;
+      }else{
+        er.innerHTML=`
+          <div style="font-family:var(--font-display);font-size:20px;color:var(--gather-deep);margin-bottom:8px">🎉 멋져요! 스스로 잘했다고 느꼈군요</div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button class="big-btn small gray" onclick="redoRecord('post')">🔄 한번 더 녹음할래요</button>
+            <button class="big-btn small green" onclick="goToStickerStep()">✨ 스티커 받기</button>
+          </div>`;
+      }
+    });
+  });
+}
 
-      const nextQuestion = () => {
-        if(qIndex+1<activeQuestions.length){ setQIndex(qIndex+1); setPhase("concept"); }
-        else { finishQuiz(); }
-      };
+function goToStickerStep(){
+  const mount=document.getElementById('post-followup');
+  mount.innerHTML=`
+    <div class="sticker-box">
+      <h3>🎁 스스로에게 스티커를 줘 봐요</h3>
+      <div class="tutorial-hint">💡 오늘 가장 잘했다고 생각하는 것에 눌러요 (여러 개 가능)</div>
+      <div class="sticker-row" style="margin-top:10px">
+        <span class="sticker-btn" data-s="⭐">⭐</span>
+        <span class="sticker-btn" data-s="🌟">🌟</span>
+        <span class="sticker-btn" data-s="💖">💖</span>
+        <span class="sticker-btn" data-s="🌸">🌸</span>
+        <span class="sticker-btn" data-s="🏆">🏆</span>
+        <span class="sticker-btn" data-s="🌈">🌈</span>
+      </div>
+      <div style="margin-top:14px"><button class="big-btn green" onclick="finalizePost()">임명장 받기 ▶</button></div>
+    </div>`;
+  mount.querySelectorAll('.sticker-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const s=b.dataset.s;const arr=APP_STATE.postRecord.stickers;
+      const i=arr.indexOf(s);
+      if(i===-1){arr.push(s);b.classList.add('picked');launchConfetti(20);sfxCheer();}
+      else{arr.splice(i,1);b.classList.remove('picked');}
+    });
+  });
+}
 
-      const retryQuestion = () => {
-        const cards = [...slots.filter(it=>it), ...pool];
-        setPool(cards.sort(()=>0.5-Math.random()));
-        setSlots(new Array(currentQ.cards.length).fill(null)); setPhase("quiz");
+async function finalizePost(){
+  finishRecord('post');
+  if(GAS_URL){
+    try{
+      const payload={
+        name:APP_STATE.learnerName,clazz:APP_STATE.learnerClass,
+        preText:APP_STATE.preRecord.text,preAudio:APP_STATE.preRecord.audioBase64||'',
+        postText:APP_STATE.postRecord.text,postAudio:APP_STATE.postRecord.audioBase64||'',
+        selfStars:APP_STATE.postRecord.stars,stickers:APP_STATE.postRecord.stickers,
+        helpCount:APP_STATE.preRecord.helpCount+APP_STATE.postRecord.helpCount,
+        redoCount:APP_STATE.preRecord.redoCount+APP_STATE.postRecord.redoCount,
+        correct:APP_STATE.correct,total:APP_STATE.total,chosenCount:APP_STATE.chosenCount,
       };
+      await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});
+    }catch(e){console.warn('GAS 전송 실패',e);}
+  }
+  showScreen('cert');
+}
 
-      const finishQuiz = () => {
-        if(mediaRecorder){ setPhase("recording"); speak("모든 문제를 풀었어요! 배운 순서를 친구에게 다시 설명해보세요.",soundOn); }
-        else { saveAndFinish(null); }
-      };
+// ============================================
+// 📚 12. 활동 라우터
+// ============================================
+function renderActivity(root){
+  const q=currentActivityQuestion();
+  if(!q){showScreen('inquiry-post');return;}
+  switch(q.stage){
+    case 'gather-same': return drawGatherSimple(root,q,'같은 두 수를 모으면');
+    case 'gather-mixed':return drawGatherSimple(root,q,'두 묶음을 모으면');
+    case 'gather-card': return drawCardSum(root,q);
+    case 'gather-many': return drawBranchMany(root,q,'gather');
+    case 'split-equal': return drawSplitEqual(root,q);
+    case 'split-card':  return drawSplitCard(root,q);
+    case 'split-many':  return drawBranchMany(root,q,'split');
+    default: nextActivity();
+  }
+}
+function nextActivity(){
+  APP_STATE.activityIdx++;
+  if(APP_STATE.activityIdx>=APP_STATE.activityQueue.length)showScreen('inquiry-post');
+  else showScreen('activity');
+}
+function recordCorrect(){APP_STATE.correct++;APP_STATE.total++;sfxCorrect();}
+function recordWrong(){APP_STATE.total++;sfxWrong();}
+function showFeedback(correct,msg){
+  const fb=document.getElementById('feedback');const card=document.getElementById('feedback-card');
+  card.classList.toggle('wrong',!correct);
+  card.textContent=msg||(correct?(getEncouragement()):'다시 해 봐요 💪');
+  fb.classList.add('show');card.style.animation='none';void card.offsetWidth;card.style.animation='fb-pop .5s forwards';
+  speak(correct?'잘했어요':'다시 해 봐요');
+  if(correct)launchConfetti(30);
+  setTimeout(()=>{fb.classList.remove('show');card.style.animation='none';card.style.opacity='0';},1200);
+}
+function getEncouragement(){
+  const msgs=['잘했어요! 👍','멋져요! ✨','정확해요! 🎉','대단해요! 🌟','맞아요! 💚'];
+  return msgs[Math.floor(Math.random()*msgs.length)];
+}
 
-      const handleStartRecording = () => {
-        audioChunksRef.current=[]; setAudioBlob(null); setAudioBase64(null);
-        if(mediaRecorder){ mediaRecorder.start(); setIsRecording(true); }
-      };
-      const handleStopRecording = () => {
-        if(mediaRecorder&&isRecording){ mediaRecorder.stop(); setIsRecording(false); }
-      };
-      const handleDiscardRecording = () => { setAudioBlob(null); setAudioBase64(null); };
+// 구체물 SVG
+const OBJECT_SVG={
+  truck:(c='#E84545')=>`<svg width="60" height="44" viewBox="0 0 64 48"><rect x="2" y="14" width="38" height="22" rx="3" fill="${c}"/><rect x="40" y="22" width="20" height="14" rx="3" fill="#3990D8"/><rect x="44" y="26" width="12" height="7" fill="#B5E0FF"/><circle cx="14" cy="40" r="6" fill="#222"/><circle cx="48" cy="40" r="6" fill="#222"/></svg>`,
+  apple:()=>`<svg width="40" height="44" viewBox="0 0 44 48"><path d="M22 8 Q26 4 30 6" stroke="#5A2E0E" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="28" cy="9" rx="5" ry="3" fill="#5BB836" transform="rotate(30 28 9)"/><ellipse cx="22" cy="28" rx="17" ry="18" fill="#E84545"/></svg>`,
+  flower:(c='#FFD93C')=>`<svg width="38" height="44" viewBox="0 0 42 48"><rect x="20" y="20" width="2" height="22" fill="#2F7A12"/><circle cx="21" cy="14" r="7" fill="${c}"/><circle cx="11" cy="20" r="7" fill="${c}"/><circle cx="31" cy="20" r="7" fill="${c}"/><circle cx="16" cy="8" r="7" fill="${c}"/><circle cx="26" cy="8" r="7" fill="${c}"/><circle cx="21" cy="16" r="4.5" fill="#fff"/></svg>`,
+  bear:()=>`<svg width="38" height="44" viewBox="0 0 42 48"><ellipse cx="11" cy="14" rx="6" ry="6" fill="#6E3A1A"/><ellipse cx="31" cy="14" rx="6" ry="6" fill="#6E3A1A"/><ellipse cx="21" cy="28" rx="16" ry="15" fill="#A86A3A"/><circle cx="16" cy="24" r="2" fill="#222"/><circle cx="26" cy="24" r="2" fill="#222"/><ellipse cx="21" cy="32" rx="5" ry="3" fill="#FFD8B5"/></svg>`,
+};
+function objsRow(svgFn,count,color){let h='';for(let i=0;i<count;i++)h+=`<span class="obj" style="animation-delay:${i*0.07}s">${svgFn(color)}</span>`;return h;}
 
-      const saveAndFinish = async (audioData) => {
-        setPhase("submitting");
-        const payload = { name:selectedStudent, score, total:activeQuestions.length, audioBase64:audioData!==undefined?audioData:audioBase64 };
-        if(window.GAS_API_URL&&window.GAS_API_URL.trim()!==''){
-          try { await fetch(window.GAS_API_URL,{method:'POST',body:JSON.stringify(payload)}); }
-          catch(e){ console.error("저장 실패",e); }
-        }
-        setPhase("report");
-        speak(`대단해요! ${activeQuestions.length}문제 중 ${score}문제를 맞췄어요.`,soundOn);
-        fireConfetti();
-      };
+// 마스코트 SVG
+function svgMoEum(size=140){return `<svg viewBox="0 0 140 160" width="${size}" xmlns="http://www.w3.org/2000/svg"><ellipse cx="70" cy="148" rx="40" ry="6" fill="rgba(0,0,0,.15)"/><ellipse cx="70" cy="85" rx="55" ry="58" fill="url(#mo-body)"/><defs><radialGradient id="mo-body" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#FFF099"/><stop offset="60%" stop-color="#FFD93C"/><stop offset="100%" stop-color="#E8B100"/></radialGradient></defs><ellipse cx="40" cy="98" rx="10" ry="7" fill="#FFB1C5" opacity=".8"/><ellipse cx="100" cy="98" rx="10" ry="7" fill="#FFB1C5" opacity=".8"/><ellipse cx="52" cy="78" rx="9" ry="11" fill="#222"/><ellipse cx="88" cy="78" rx="9" ry="11" fill="#222"/><circle cx="55" cy="74" r="3" fill="#fff"/><circle cx="91" cy="74" r="3" fill="#fff"/><path d="M60 100 Q70 112 80 100" stroke="#5D3000" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="105" rx="14" ry="9" fill="#FFD93C" transform="rotate(-30 25 105)"/><ellipse cx="115" cy="105" rx="14" ry="9" fill="#FFD93C" transform="rotate(30 115 105)"/><path d="M60 28 Q70 18 80 28" stroke="#E8B100" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;}
+function svgNaNum(size=140){return `<svg viewBox="0 0 140 160" width="${size}" xmlns="http://www.w3.org/2000/svg"><ellipse cx="70" cy="148" rx="40" ry="6" fill="rgba(0,0,0,.15)"/><ellipse cx="42" cy="32" rx="11" ry="22" fill="#FFB1D2" transform="rotate(-15 42 32)"/><ellipse cx="98" cy="32" rx="11" ry="22" fill="#FFB1D2" transform="rotate(15 98 32)"/><ellipse cx="42" cy="34" rx="6" ry="14" fill="#FF7CAA" transform="rotate(-15 42 34)"/><ellipse cx="98" cy="34" rx="6" ry="14" fill="#FF7CAA" transform="rotate(15 98 34)"/><ellipse cx="70" cy="92" rx="55" ry="55" fill="url(#na-body)"/><defs><radialGradient id="na-body" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#FFE7F0"/><stop offset="60%" stop-color="#FFB1D2"/><stop offset="100%" stop-color="#E0689A"/></radialGradient></defs><ellipse cx="40" cy="105" rx="10" ry="7" fill="#FF6FA8" opacity=".6"/><ellipse cx="100" cy="105" rx="10" ry="7" fill="#FF6FA8" opacity=".6"/><ellipse cx="52" cy="85" rx="9" ry="11" fill="#222"/><ellipse cx="88" cy="85" rx="9" ry="11" fill="#222"/><circle cx="55" cy="81" r="3" fill="#fff"/><circle cx="91" cy="81" r="3" fill="#fff"/><path d="M62 107 Q70 116 78 107" stroke="#5D1235" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;}
 
-      const downloadReport = () => {
-        const canvas = generateCanvas(selectedStudent, score, activeQuestions.length);
-        const link = document.createElement('a');
-        link.download = `순서대로말해요_수료증_${selectedStudent}.png`;
-        link.href = canvas.toDataURL(); link.click();
-      };
+function shuffleArr(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function uniqueArr(arr){return [...new Set(arr)];}
 
-      /* ========== 화면별 렌더링 ========== */
+// 모으기 - 그림
+function drawGatherSimple(root,q,inst){
+  const ans=q.a+q.b;
+  let ch=uniqueArr([ans,ans-1,ans+1,ans-2]).filter(x=>x>0&&x<=10);
+  ch=shuffleArr(ch).slice(0,4);if(!ch.includes(ans))ch[0]=ans;
+  const svgFn=OBJECT_SVG[q.kind]||OBJECT_SVG.apple;
+  root.innerHTML=`
+    <div class="activity">
+      <div class="instruction" id="instr-text"><span class="emph">${inst}</span> 얼마가 될까요?</div>
+      <div class="activity-canvas">
+        <div class="objects-box">${objsRow(svgFn,q.a)}</div>
+        <div style="font-family:var(--font-display);font-size:70px;color:var(--gather-deep)">+</div>
+        <div class="objects-box">${objsRow(svgFn,q.b)}</div>
+        <div style="font-family:var(--font-display);font-size:70px;color:var(--gather-deep)">=</div>
+        <div class="num-tile target empty" id="answer-slot">?</div>
+      </div>
+      <div class="tutorial-hint">👇 답을 하나 골라 봐요 — 틀려도 다시 도전할 수 있어요</div>
+      <div class="choices">${ch.map(c=>`<button class="choice-btn" data-val="${c}">${c}</button>`).join('')}</div>
+      <div class="mascot-corner">${svgMoEum(110)}</div>
+      <div class="speech">두 묶음을 모아 보자!</div>
+    </div>`;
+  speakWithHighlight(inst+' 얼마가 될까요?',document.getElementById('instr-text'));
+  root.querySelectorAll('.choice-btn').forEach(b=>b.addEventListener('click',()=>onSimpleChoice(b,+b.dataset.val,ans)));
+}
+function onSimpleChoice(btn,val,answer){
+  if(val===answer){
+    btn.classList.add('correct');
+    const slot=document.getElementById('answer-slot');
+    if(slot){slot.classList.remove('empty');slot.classList.add('correct-fill');slot.textContent=answer;}
+    recordCorrect();
+    setTimeout(()=>{showFeedback(true);setTimeout(nextActivity,900);},500);
+  }else{
+    btn.classList.add('wrong');recordWrong();
+    // 틀린 거 리셋 (다시 클릭 가능)
+    setTimeout(()=>btn.classList.remove('wrong'),600);
+    const sp=document.querySelector('.activity .speech');
+    if(sp)sp.textContent='아쉬워! 차근차근 세어 다시 골라 봐';
+  }
+}
+function drawCardSum(root,q){
+  const ans=q.a+q.b;
+  let ch=uniqueArr([ans,ans-1,ans+1,ans-2]).filter(x=>x>0&&x<=10);
+  ch=shuffleArr(ch).slice(0,4);if(!ch.includes(ans))ch[0]=ans;
+  root.innerHTML=`
+    <div class="activity">
+      <div class="instruction" id="instr-text"><span class="emph">두 수</span>를 모으면 얼마가 되나요?</div>
+      <div class="activity-canvas">
+        <div class="num-tile">${q.a}</div>
+        <div style="font-family:var(--font-display);font-size:70px;color:var(--gather-deep)">＋</div>
+        <div class="num-tile">${q.b}</div>
+        <div style="font-family:var(--font-display);font-size:70px;color:var(--gather-deep)">＝</div>
+        <div class="num-tile target empty" id="answer-slot">?</div>
+      </div>
+      <div class="tutorial-hint">👇 답을 골라 봐요</div>
+      <div class="choices">${ch.map(c=>`<button class="choice-btn" data-val="${c}">${c}</button>`).join('')}</div>
+      <div class="mascot-corner">${svgMoEum(110)}</div>
+      <div class="speech">손가락으로 세 봐도 좋아!</div>
+    </div>`;
+  speakWithHighlight('두 수를 모으면 얼마가 되나요?',document.getElementById('instr-text'));
+  root.querySelectorAll('.choice-btn').forEach(b=>b.addEventListener('click',()=>onSimpleChoice(b,+b.dataset.val,ans)));
+}
 
-      if(phase==="loading") return (
-        <div className="flex items-center justify-center" style={{height:'100vh'}}>
-          <div className="text-3xl font-bold text-green-600 animate-pulse">불러오는 중...</div>
+// 분지 트리 — 여러 가지 모으기/가르기
+function drawBranchMany(root,q,mode){
+  const target=q.target;
+  const pairs=[];for(let i=1;i<target;i++)pairs.push([i,target-i]);
+  const [a,b]=pairs[Math.floor(Math.random()*pairs.length)];
+  const leftVal=Math.random()<0.5?a:b;const rightVal=leftVal===a?b:a;
+  const optionsRaw=uniqueArr([leftVal,rightVal,a+1,b-1,target-1,1,2]).filter(x=>x>0&&x<=9);
+  const opts=shuffleArr(optionsRaw).slice(0,6);
+  const isGather=mode==='gather';
+  const svg=isGather
+    ? `<svg class="tree-svg" viewBox="0 0 380 290" preserveAspectRatio="none"><path d="M60 100 L60 150 L320 150 L320 100" stroke="#FF6FA8" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M190 150 L190 220" stroke="#FF6FA8" stroke-width="6" fill="none" stroke-linecap="round"/><polygon points="190,250 175,225 205,225" fill="#FF6FA8"/></svg>`
+    : `<svg class="tree-svg" viewBox="0 0 380 290" preserveAspectRatio="none"><path d="M190 70 L190 130 L60 130 L60 170" stroke="#FF6FA8" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M190 130 L320 130 L320 170" stroke="#FF6FA8" stroke-width="6" fill="none" stroke-linecap="round"/><polygon points="60,200 45,175 75,175" fill="#FF6FA8"/><polygon points="320,200 305,175 335,175" fill="#FF6FA8"/></svg>`;
+  const slotsRow=`<div class="row" ${!isGather?'style="margin-top:30px"':''}><div class="slot empty" data-correct="${leftVal}">?</div><div class="slot empty" data-correct="${rightVal}">?</div></div>`;
+  const targetRow=`<div class="row" ${isGather?'style="margin-top:30px"':''}><div class="anchor"${!isGather?' style="background:linear-gradient(180deg,#FFB1D2,#FF6FA8);color:#fff;border-color:#C73874"':''}>${target}</div></div>`;
+  const treeRows=isGather?(slotsRow+targetRow):(targetRow+slotsRow);
+  root.innerHTML=`
+    <div class="activity">
+      <div class="instruction" id="instr-text">${isGather?`두 수를 모아 <span class="emph">${target}</span>을 만들어요`:`<span class="emph">${target}</span>을 두 수로 갈라 봐요`}</div>
+      <div class="activity-canvas" style="gap:60px">
+        <div class="branch-tree">${svg}${treeRows}</div>
+        <div class="option-panel">${opts.map(o=>`<div class="opt-card" data-val="${o}">${o}</div>`).join('')}</div>
+      </div>
+      <div class="tutorial-hint">👆 카드와 빈칸을 차례로 눌러서 옮겨요 — 틀려도 다시 도전!</div>
+      <div class="mascot-corner">${isGather?svgMoEum(110):svgNaNum(110)}</div>
+      <div class="speech">${isGather?'두 수를 골라 봐!':'어떻게 갈라질까?'}</div>
+    </div>`;
+  speakWithHighlight(isGather?`두 수를 모아 ${target}을 만들어요`:`${target}을 두 수로 갈라 봐요`,document.getElementById('instr-text'));
+  bindBranchTree(root);
+}
+
+function bindBranchTree(root){
+  let selOpt=null,selSlot=null;
+  function clearOpt(){if(selOpt)selOpt.classList.remove('active');selOpt=null;}
+  function clearSlot(){if(selSlot)selSlot.classList.remove('active');selSlot=null;}
+  function tryPlace(){
+    if(!selOpt||!selSlot)return;
+    const val=+selOpt.dataset.val;const correctVal=+selSlot.dataset.correct;
+    if(val===correctVal){
+      selSlot.classList.remove('empty','active');selSlot.classList.add('filled');
+      selSlot.textContent=val;
+      selOpt.classList.add('used');selOpt.classList.remove('active');
+      sfxCorrect();selOpt=null;selSlot=null;
+      if(root.querySelectorAll('.slot.empty').length===0){
+        recordCorrect();
+        setTimeout(()=>{showFeedback(true);setTimeout(nextActivity,1000);},400);
+      }
+    }else{
+      selSlot.classList.add('shake');
+      const s=selSlot,o=selOpt;
+      setTimeout(()=>{s.classList.remove('shake','active');o.classList.remove('active');},500);
+      selSlot=null;selOpt=null;sfxWrong();
+      const sp=root.querySelector('.speech');if(sp)sp.textContent='아쉬워! 다른 수를 골라 보자';
+    }
+  }
+  root.querySelectorAll('.opt-card').forEach(card=>{
+    card.addEventListener('click',()=>{if(card.classList.contains('used'))return;clearOpt();selOpt=card;card.classList.add('active');tryPlace();});
+  });
+  root.querySelectorAll('.slot.empty').forEach(slot=>{
+    slot.addEventListener('click',()=>{clearSlot();selSlot=slot;slot.classList.add('active');tryPlace();});
+  });
+}
+
+function drawSplitEqual(root,q){
+  const total=q.target;const answer=total/2;
+  if(!Number.isInteger(answer)){nextActivity();return;}
+  const svgFn=OBJECT_SVG[q.kind]||OBJECT_SVG.bear;
+  let ch=uniqueArr([answer,answer-1,answer+1,total-1]).filter(x=>x>0&&x<total);
+  ch=shuffleArr(ch).slice(0,4);if(!ch.includes(answer))ch[0]=answer;
+  root.innerHTML=`
+    <div class="activity">
+      <div class="instruction" id="instr-text"><span class="emph">${total}</span>을 <span class="emph">같은 수</span>로 가르면 한 쪽은?</div>
+      <div class="activity-canvas" style="flex-direction:column;gap:10px">
+        <div class="objects-box" style="border-color:var(--split-deep);min-width:320px">${objsRow(svgFn,total)}</div>
+        <div style="font-family:var(--font-display);font-size:36px;color:var(--split-deep)">⬇️ 같은 수로</div>
+        <div style="display:flex;gap:30px">
+          <div class="objects-box" style="border-color:var(--split-deep);min-width:160px;min-height:110px" id="left-plate"></div>
+          <div class="objects-box" style="border-color:var(--split-deep);min-width:160px;min-height:110px" id="right-plate"></div>
         </div>
-      );
+      </div>
+      <div class="tutorial-hint">👇 한 쪽 접시의 수는?</div>
+      <div class="choices">${ch.map(c=>`<button class="choice-btn" data-val="${c}">${c}</button>`).join('')}</div>
+      <div class="mascot-corner">${svgNaNum(110)}</div>
+      <div class="speech">반반씩 나눠 보자!</div>
+    </div>`;
+  speakWithHighlight(`${total}을 같은 수로 가르면 한 쪽은?`,document.getElementById('instr-text'));
+  root.querySelectorAll('.choice-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const val=+b.dataset.val;
+      if(val===answer){
+        b.classList.add('correct');
+        document.getElementById('left-plate').innerHTML=objsRow(svgFn,answer);
+        document.getElementById('right-plate').innerHTML=objsRow(svgFn,answer);
+        recordCorrect();
+        setTimeout(()=>{showFeedback(true);setTimeout(nextActivity,1400);},500);
+      }else{b.classList.add('wrong');recordWrong();setTimeout(()=>b.classList.remove('wrong'),600);}
+    });
+  });
+}
 
-      /* ── 로그인 ── */
-      if(phase==="login") return (
-        <div className="flex items-center justify-center p-5 bg-gradient-to-br from-green-50 to-emerald-100" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div style={{display:'flex',flexDirection:'row',gap:'2rem',width:'100%',maxWidth:'56rem',alignItems:'center'}}>
-            <div className="flex-1 flex flex-col items-center text-center">
-              <div className="text-8xl mb-4">📖</div>
-              <h1 className="text-5xl font-black text-green-700 mb-3 drop-shadow-sm">순서대로 말해요!</h1>
-              <p className="text-xl text-slate-600 font-bold word-keep">내 이름을 선택하고 재미있는 문제를 풀어봐요</p>
-            </div>
-            <div className="flex-1 bg-white p-8 rounded-3xl shadow-2xl border-4 border-green-100">
-              <p className="text-lg font-bold text-slate-500 mb-3">이름을 선택해요 👇</p>
-              <select className="w-full text-2xl p-4 bg-green-50 border-4 border-green-200 rounded-2xl mb-5 font-bold text-slate-700 focus:outline-none focus:border-green-500" value={selectedStudent} onChange={e=>setSelectedStudent(e.target.value)}>
-                {students.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-              <button onClick={startMicRequest} className="w-full py-5 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-black text-2xl shadow-lg active:scale-95 transition">시작하기 ▶</button>
-            </div>
+function drawSplitCard(root,q){
+  const total=q.target,a=q.a,ans=total-a;
+  let ch=uniqueArr([ans,ans-1,ans+1,total-1]).filter(x=>x>0&&x<total);
+  ch=shuffleArr(ch).slice(0,4);if(!ch.includes(ans))ch[0]=ans;
+  root.innerHTML=`
+    <div class="activity">
+      <div class="instruction" id="instr-text"><span class="emph">${total}</span>은 <span class="emph">${a}</span>과 무엇으로 가를까요?</div>
+      <div class="activity-canvas" style="gap:18px">
+        <div class="num-tile target">${total}</div>
+        <div style="font-family:var(--font-display);font-size:60px;color:var(--split-deep)">⇒</div>
+        <div class="num-tile">${a}</div>
+        <div style="font-family:var(--font-display);font-size:48px;color:var(--split-deep)">과</div>
+        <div class="num-tile target empty" id="answer-slot">?</div>
+      </div>
+      <div class="tutorial-hint">👇 빈칸에 들어갈 수를 골라요</div>
+      <div class="choices">${ch.map(c=>`<button class="choice-btn" data-val="${c}">${c}</button>`).join('')}</div>
+      <div class="mascot-corner">${svgNaNum(110)}</div>
+      <div class="speech">${a} 더하기 얼마면 ${total}이 될까?</div>
+    </div>`;
+  speakWithHighlight(`${total}은 ${a}과 무엇으로 가를까요?`,document.getElementById('instr-text'));
+  root.querySelectorAll('.choice-btn').forEach(b=>b.addEventListener('click',()=>onSimpleChoice(b,+b.dataset.val,ans)));
+}
+
+// ============================================
+// 🏆 13. 임명장 + 대시보드 (사전·사후 비교)
+// ============================================
+function renderCert(root){
+  launchConfetti(60);sfxCheer();
+  const st=APP_STATE.postRecord.stickers.join(' ');
+  const total=APP_STATE.total||1;
+  root.innerHTML=`
+    <div class="cert-wrap">
+      <div class="cert-card">
+        <h1>🌟 모으기와 가르기 임명장 🌟</h1>
+        <div style="text-align:center"><div class="cert-name">${APP_STATE.learnerClass?APP_STATE.learnerClass+' ':''}${APP_STATE.learnerName}</div></div>
+        <div class="cert-compare">
+          <div class="cert-box pre">
+            <h3>💡 활동 전 — 내가 아는 모으기·가르기</h3>
+            <p>${APP_STATE.preRecord.text||'(녹음하지 않았어요)'}</p>
+          </div>
+          <div class="cert-box post">
+            <h3>🌟 활동 후 — 새롭게 알게 된 점</h3>
+            <p>${APP_STATE.postRecord.text||'(녹음하지 않았어요)'}</p>
           </div>
         </div>
-      );
-
-      /* ── 마이크 요청 ── */
-      if(phase==="mic_request") return (
-        <div className="flex items-center justify-center p-5 bg-indigo-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div style={{background:'white',padding:'2rem',borderRadius:'1.5rem',boxShadow:'0 25px 50px -12px rgba(0,0,0,.25)',border:'8px solid #c7d2fe',display:'flex',flexDirection:'row',gap:'2rem',alignItems:'center',width:'100%',maxWidth:'48rem'}}>
-            <div className="flex flex-col items-center flex-shrink-0">
-              <div className="text-7xl mb-3 animate-bounce">🎤</div>
-              <h2 className="text-xl text-indigo-600 font-black text-center">친구에게<br/>설명하기</h2>
-            </div>
-            <div className="flex-1">
-              <div className="bg-indigo-50 p-5 rounded-2xl border-4 border-indigo-100 mb-5">
-                <p className="text-xl leading-relaxed text-slate-700 font-bold break-keep">
-                  문제를 다 풀고 난 뒤<br/>배운 내용을 다시 설명해 보는<br/>시간이에요! <span className="text-indigo-600 font-extrabold">마이크를 허용</span>해주세요.
-                </p>
-              </div>
-              <button onClick={requestMicAccess} className="w-full bg-indigo-500 text-white text-2xl py-5 rounded-2xl shadow-lg font-bold active:scale-95 transition">🎙️ 마이크 허용하기</button>
-            </div>
-          </div>
+        <div class="dashboard">
+          <div class="dash-card"><div class="num">${APP_STATE.correct}/${APP_STATE.total}</div><div class="label">📚 도전·정답</div></div>
+          <div class="dash-card"><div class="num">${'★'.repeat(APP_STATE.postRecord.stars)}${'☆'.repeat(5-APP_STATE.postRecord.stars)}</div><div class="label">⭐ 자기평가</div></div>
+          <div class="dash-card"><div class="num">${st||'—'}</div><div class="label">🎁 스티커</div></div>
+          <div class="dash-card"><div class="num">${APP_STATE.preRecord.helpCount+APP_STATE.postRecord.helpCount}</div><div class="label">💡 도움받음</div></div>
         </div>
-      );
-
-      /* ── 문제 수 선택 ── */
-      if(phase==="count_select") return (
-        <div className="flex items-center justify-center p-5 bg-gradient-to-br from-green-50 to-emerald-100" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-2xl w-full border-4 border-green-100 text-center">
-            <h2 className="text-4xl font-black text-slate-800 mb-2 word-keep">몇 문제를 풀어볼까요?</h2>
-            <p className="text-lg text-green-600 font-bold mb-6">준비된 문제: {allQuestions.length}개</p>
-            <div className="grid grid-cols-3 gap-4">
-              {allQuestions.length>=5 && (
-                <button onClick={()=>startGame(5)} className="py-6 bg-green-50 border-4 border-green-200 hover:border-green-500 rounded-2xl font-black text-xl text-green-700 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                  <span className="text-4xl">🌱</span><span>5문제</span>
-                </button>
-              )}
-              {allQuestions.length>=10 && (
-                <button onClick={()=>startGame(10)} className="py-6 bg-green-50 border-4 border-green-200 hover:border-green-500 rounded-2xl font-black text-xl text-green-700 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                  <span className="text-4xl">🌿</span><span>10문제</span>
-                </button>
-              )}
-              <button onClick={()=>startGame('ALL')} className="py-6 bg-green-50 border-4 border-green-200 hover:border-green-500 rounded-2xl font-black text-xl text-green-700 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <span className="text-4xl">🌳</span><span>모두</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 개념 설명 ── */
-      if(phase==="concept") return (
-        <div className="flex items-center justify-center p-4 bg-green-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div style={{width:'100%',maxWidth:'64rem',background:'white',borderRadius:'1.5rem',boxShadow:'0 25px 50px -12px rgba(0,0,0,.25)',borderBottom:'8px solid #bbf7d0',display:'flex',flexDirection:'row',overflow:'hidden',maxHeight:'calc(100vh - 32px)'}}>
-            {/* 왼쪽: 설명 + 버튼 */}
-            <div className="flex-1 p-7 flex flex-col justify-between">
-              <div>
-                <div className="inline-block bg-green-100 text-green-700 font-bold px-4 py-1.5 rounded-full mb-4 text-base">
-                  문제 {qIndex+1} / {activeQuestions.length}
-                </div>
-                <h2 className="text-4xl font-black mb-4 text-slate-800 word-keep">{currentQ.title}</h2>
-                <div className="bg-slate-50 p-5 rounded-2xl border-2 border-slate-100">
-                  <p className="text-2xl font-bold text-slate-700 word-keep leading-relaxed border-l-8 border-green-300 pl-4 text-left">"{currentQ.concept}"</p>
-                </div>
-              </div>
-              <button onClick={startQuiz} className="mt-5 w-full py-5 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition flex items-center justify-center gap-3">
-                문제 풀기 ▶
-              </button>
-            </div>
-            {/* 오른쪽: 시각화 */}
-            <div className="flex-1 bg-green-50 flex items-center justify-center p-6 border-l-4 border-green-100">
-              {currentQ.type==='cyclic' ? <CircularLayout items={currentQ.cards}/> : <LinearLayout items={currentQ.cards}/>}
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 퀴즈 (2열 레이아웃) ── */
-      if(phase==="quiz") return (
-        <div className="flex flex-col p-3 bg-green-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          {/* 상단 헤더 */}
-          <div style={{width:'100%',maxWidth:'64rem',margin:'0 auto 0.75rem',background:'white',padding:'0.6rem 1.25rem',borderRadius:'1rem',boxShadow:'0 2px 8px rgba(0,0,0,.05)',border:'2px solid #dcfce7',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-            <span style={{fontWeight:'700',color:'#94a3b8',fontSize:'1rem'}}>문제 {qIndex+1} / {activeQuestions.length}</span>
-            <h2 style={{fontSize:'1.6rem',fontWeight:'900',color:'#1e293b',margin:0}}>{currentQ.title}</h2>
-            <span style={{fontSize:'1rem',fontWeight:'700',color:'#16a34a'}}>카드를 터치해서 채우세요!</span>
-          </div>
-          {/* 메인 2열 */}
-          <div style={{flex:1,width:'100%',maxWidth:'64rem',margin:'0 auto',display:'flex',flexDirection:'row',gap:'0.75rem',overflow:'hidden'}}>
-            {/* 왼쪽: 슬롯 */}
-            <div style={{flex:1,background:'white',borderRadius:'1rem',padding:'1rem',border:'4px solid #f1f5f9',boxShadow:'0 4px 16px rgba(0,0,0,.06)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-              <h3 style={{fontSize:'1.1rem',fontWeight:'800',color:'#94a3b8',marginBottom:'0.5rem',flexShrink:0}}>📌 순서대로 채우기</h3>
-              <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-around',overflow:'hidden'}}>
-                {slots.map((card, idx) => (
-                  <div
-                    key={idx}
-                    className={`slot-box ${dragOverIndex===idx ? 'drag-over' : ''}`}
-                    style={{marginBottom:'4px',minHeight:'72px'}}
-                    onDragOver={(e)=>handleDragOver(e,idx)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e)=>handleDrop(e,idx)}
-                  >
-                    <div style={{flexShrink:0,width:'2.2rem',height:'2.2rem',background:'#e2e8f0',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'900',color:'#64748b',marginRight:'0.75rem',fontSize:'1.1rem'}}>{idx+1}</div>
-                    {card ? (
-                      <div
-                        className="drag-card flex-1"
-                        draggable="true"
-                        onDragStart={(e)=>handleDragStart(e,idx)}
-                        onClick={()=>tapSlotCard(card,idx)}
-                      >
-                        <div style={{fontSize:'2.2rem',marginRight:'0.75rem',pointerEvents:'none'}}>{card.img}</div>
-                        <div style={{fontSize:'1.2rem',fontWeight:'800',color:'#334155',wordBreak:'keep-all',pointerEvents:'none'}}>{card.text}</div>
-                      </div>
-                    ) : (
-                      <div style={{flex:1,fontSize:'1.05rem',fontWeight:'700',color:'#cbd5e1'}}>카드를 선택하세요</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* 오른쪽: 카드풀 + 버튼 */}
-            <div style={{flex:1,display:'flex',flexDirection:'column',gap:'0.75rem',overflow:'hidden'}}>
-              <div style={{flex:1,background:'#f8fafc',borderRadius:'1rem',padding:'1rem',border:'4px solid #e2e8f0',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-                <h3 style={{fontSize:'1.1rem',fontWeight:'800',color:'#94a3b8',marginBottom:'0.5rem',flexShrink:0}}>🃏 문제 카드</h3>
-                <div style={{flex:1,display:'flex',flexWrap:'wrap',gap:'0.5rem',alignContent:'flex-start',justifyContent:'center',overflow:'hidden'}}>
-                  {pool.length > 0 ? pool.map(card=>(
-                    <div
-                      key={card.id}
-                      onClick={()=>tapPoolCard(card)}
-                      style={{background:'white',padding:'0.6rem 0.8rem',borderRadius:'1rem',boxShadow:'0 2px 8px rgba(0,0,0,.08)',border:'4px solid #bfdbfe',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',flex:'1 1 calc(50% - 0.5rem)',minWidth:'90px',maxWidth:'160px',boxSizing:'border-box'}}
-                    >
-                      <div style={{fontSize:'2.5rem',marginBottom:'0.25rem'}}>{card.img}</div>
-                      <div style={{fontSize:'1rem',fontWeight:'700',color:'#334155',textAlign:'center',wordBreak:'keep-all'}}>{card.text}</div>
-                    </div>
-                  )) : (
-                    <div style={{fontSize:'1.1rem',fontWeight:'700',color:'#94a3b8',textAlign:'center',padding:'1rem',width:'100%'}}>모두 이동했어요!<br/>정답을 확인해보세요.</div>
-                  )}
-                </div>
-              </div>
-              <div style={{display:'flex',gap:'0.75rem',flexShrink:0}}>
-                <button onClick={retryQuestion} style={{flex:1,padding:'1rem',background:'#94a3b8',color:'white',borderRadius:'1rem',fontWeight:'900',fontSize:'1.1rem',border:'none',cursor:'pointer'}}>🔄 다시</button>
-                <button onClick={checkAnswer} style={{flex:2,padding:'1rem',background:'#22c55e',color:'white',borderRadius:'1rem',fontWeight:'900',fontSize:'1.1rem',border:'none',cursor:'pointer'}}>정답 확인 ✅</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 오답 ── */
-      if(phase==="wrong") return (
-        <div className="flex items-center justify-center p-5 bg-orange-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div className="w-full max-w-3xl bg-white p-8 rounded-3xl shadow-2xl border-8 border-orange-200 flex flex-row gap-8 items-center">
-            <div className="flex-shrink-0 text-8xl">🤔</div>
-            <div className="flex-1">
-              <h2 className="text-4xl font-black text-orange-500 mb-4">순서가 달라요!</h2>
-              <p className="text-xl font-bold text-slate-600 mb-6 word-keep leading-relaxed">틀린 곳의 순서를 드래그해서 바꾸어 다시 생각해 볼까요?</p>
-              <button onClick={()=>setPhase("quiz")} className="w-full py-5 bg-orange-400 hover:bg-orange-500 text-white rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition">
-                이어서 다시 풀기 🔄
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 정답 피드백 ── */
-      if(phase==="feedback") return (
-        <div className="flex items-center justify-center p-4 bg-green-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div className="w-full max-w-4xl bg-white p-7 rounded-3xl shadow-2xl border-8 border-green-300 flex flex-row gap-7 items-center">
-            <div className="flex-shrink-0 flex flex-col items-center">
-              <div className="text-8xl mb-2">🎉</div>
-              <h2 className="text-3xl font-black text-green-500 text-center">정답!</h2>
-            </div>
-            <div className="flex-1 flex flex-col gap-4">
-              <p className="text-lg font-bold text-slate-700 word-keep leading-relaxed border-l-8 border-green-200 pl-3">"{currentQ.concept}"</p>
-              <div className="bg-green-50 p-3 rounded-2xl flex items-center justify-center">
-                {currentQ.type==='cyclic' ? <CircularLayout items={currentQ.cards}/> : <LinearLayout items={currentQ.cards}/>}
-              </div>
-              <button onClick={nextQuestion} className="w-full py-5 bg-blue-500 hover:bg-blue-600 text-white rounded-2xl font-black text-2xl shadow-xl active:scale-95 transition">
-                {qIndex+1 < activeQuestions.length ? '다음 문제 ▶' : '배움 정리하기 🎙️'}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 녹음 ── */
-      if(phase==="recording") return (
-        <div className="flex items-center justify-center p-4 bg-orange-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl border-8 border-orange-200 flex flex-row gap-8 items-center">
-            <div className="flex-shrink-0 flex flex-col items-center">
-              <div className="text-6xl mb-3 animate-bounce">🎙️</div>
-              <h2 className="text-lg text-orange-700 font-black text-center">배운 내용<br/>설명해보기</h2>
-            </div>
-            <div className="flex-1 flex flex-col gap-4">
-              <div className="bg-orange-100 p-4 rounded-2xl">
-                <p className="text-lg font-bold text-slate-700 break-keep leading-relaxed">
-                  친구에게 방금 배운 사건의 순서를<br/>자신의 말로 다시 설명해 보아요!
-                </p>
-              </div>
-              {!isRecording && !audioBlob && (
-                <button onClick={handleStartRecording} className="w-full bg-slate-100 border-8 border-slate-300 py-6 rounded-2xl flex items-center justify-center gap-4 cursor-pointer active:scale-95 transition-all shadow-lg text-slate-500">
-                  <span className="text-5xl">🎤</span>
-                  <span className="text-xl font-bold">내 목소리로 정리하기</span>
-                </button>
-              )}
-              {isRecording && (
-                <button onClick={handleStopRecording} className="w-full bg-red-100 border-8 border-red-500 py-6 rounded-2xl flex items-center justify-center gap-4 cursor-pointer active:scale-95 transition-all shadow-lg text-red-600 animate-pulse">
-                  <span className="text-5xl">⏹️</span>
-                  <span className="text-xl font-bold">정리 완료 (누르기)</span>
-                </button>
-              )}
-              {audioBlob && (
-                <div className="bg-green-50 border-4 border-green-200 p-4 rounded-2xl">
-                  <div className="text-lg font-bold text-green-700 mb-3">녹음 완료! 멋지게 설명했네요 🎧</div>
-                  <audio src={URL.createObjectURL(audioBlob)} controls className="w-full rounded-full shadow-md"></audio>
-                </div>
-              )}
-              {audioBlob && (
-                <div className="flex gap-4">
-                  <button onClick={handleDiscardRecording} className="flex-1 bg-slate-200 text-slate-700 text-lg py-4 rounded-2xl font-bold active:scale-95 transition">다시하기</button>
-                  <button onClick={()=>saveAndFinish(audioBase64)} className="flex-[2] bg-green-500 hover:bg-green-600 text-white text-lg py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition">상장 받으러 가기! 🏆</button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-
-      /* ── 전송 중 ── */
-      if(phase==="submitting") return (
-        <div className="flex flex-col items-center justify-center p-4 text-center bg-white" style={{height:'100vh',overflow:'hidden'}}>
-          <div className="text-7xl mb-5 animate-spin">⏳</div>
-          <div className="text-2xl font-bold text-slate-600">선생님께 멋진 설명을 보내는 중이에요...</div>
-        </div>
-      );
-
-      /* ── 결과 보고 ── */
-      if(phase==="report") return (
-        <div className="flex items-center justify-center p-4 bg-green-50" style={{height:'100vh',overflow:'hidden'}}>
-          <SoundToggle soundOn={soundOn} setSoundOn={setSoundOn}/>
-          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-5xl w-full border-8 border-amber-200 flex flex-row gap-8">
-            {/* 상장 */}
-            <div className="flex-1 bg-amber-50 p-7 rounded-2xl border-4 border-dashed border-amber-300 flex flex-col justify-center items-center text-center">
-              <div className="text-6xl mb-3">🏆</div>
-              <h1 className="text-3xl font-black text-amber-800 mb-4">훌륭한 이야기꾼 상</h1>
-              <div className="text-2xl font-bold text-slate-600 mb-5">
-                <span className="text-indigo-600 underline decoration-4 text-4xl">{selectedStudent}</span> 어린이
-              </div>
-              <p className="text-base text-slate-600 font-bold leading-relaxed break-keep">
-                위 어린이는 주어진 사건의 순서를<br/>올바르게 이해하고 설명하였기에<br/>이 상장을 수여합니다.
-              </p>
-            </div>
-            {/* 결과 + 액션 */}
-            <div className="flex-1 flex flex-col justify-center gap-5">
-              <div className="bg-blue-50 p-6 rounded-2xl border-4 border-blue-100 flex flex-col items-center">
-                <div className="text-xl font-bold text-slate-700 mb-3">최종 탐험 결과</div>
-                <div className="text-6xl font-black text-blue-500">{score} <span className="text-3xl text-slate-400">/ {activeQuestions.length}</span></div>
-              </div>
-              <button onClick={downloadReport} className="w-full bg-green-500 hover:bg-green-600 text-white text-xl py-5 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-3 transition active:scale-95">
-                <span className="text-4xl">📥</span> 수료증 저장하기
-              </button>
-              <button onClick={()=>window.location.reload()} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-lg py-4 rounded-2xl font-bold border-4 border-slate-200 transition active:scale-95">
-                처음으로 돌아가기
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-
-      return null;
-    };
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-  </script>
+        <div style="text-align:center;font-family:var(--font-display);font-size:20px;color:#666;margin-top:6px">${getFinalMessage()}</div>
+      </div>
+      <div class="cert-buttons">
+        <button class="big-btn" onclick="downloadCert()">📥 임명장 저장</button>
+        <button class="big-btn green" onclick="goHome()">🔄 처음부터 다시</button>
+      </div>
+    </div>`;
+  speak('수료증을 받았어요. 정말 잘했어요');
+}
+function getFinalMessage(){
+  const c=APP_STATE.correct,t=APP_STATE.total;
+  if(t===0)return '💛 도전한 용기가 멋져요. 다음에 또 함께해요';
+  if(c>=t*0.8)return '👑 환상적이에요! 모으기·가르기를 잘 이해했어요';
+  if(c>=t*0.5)return '🌈 잘 자라고 있어요! 더 도전해 봐요';
+  return '💛 도전한 용기가 멋졌어요. 한 번 더 같이 해 봐요';
+}
+function downloadCert(){
+  const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=800;
+  const ctx=canvas.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,800);g.addColorStop(0,'#FFFEF0');g.addColorStop(1,'#FFF6D6');
+  ctx.fillStyle=g;ctx.fillRect(0,0,1200,800);
+  ctx.strokeStyle='#FFC23C';ctx.lineWidth=18;ctx.strokeRect(40,40,1120,720);
+  ctx.fillStyle='#6B4A00';ctx.font='bold 64px Jua, sans-serif';ctx.textAlign='center';
+  ctx.fillText('🌟 모으기와 가르기 임명장 🌟',600,160);
+  ctx.font='bold 44px Jua, sans-serif';ctx.fillStyle='#2F7A12';
+  ctx.fillText(APP_STATE.learnerName,600,250);
+  ctx.font='bold 26px "Nanum Gothic", sans-serif';ctx.fillStyle='#333';
+  ctx.fillText('모음이와 나눔이의 모험을 멋지게 마쳤어요!',600,320);
+  ctx.font='22px "Nanum Gothic", sans-serif';ctx.fillStyle='#666';
+  ctx.fillText(`📚 ${APP_STATE.correct}/${APP_STATE.total} 정답  ·  ⭐ ${APP_STATE.postRecord.stars}/5`,600,400);
+  ctx.fillText(APP_STATE.postRecord.stickers.join(' ')||'',600,450);
+  ctx.font='18px "Nanum Gothic", sans-serif';
+  ctx.fillText(new Date().toLocaleDateString('ko-KR'),600,550);
+  const link=document.createElement('a');
+  link.download=`모으기와_가르기_임명장_${APP_STATE.learnerName}.png`;
+  link.href=canvas.toDataURL('image/png');link.click();
+}
+</script>
 </body>
 </html>
